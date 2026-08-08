@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: official-data-refresh
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   refresh:
@@ -49,7 +49,9 @@ jobs:
             echo 'No published data changes.'
           else
             git commit -m 'data: automated official refresh'
-            git push
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
           fi
 
       - name: Explicitly deploy refreshed data
