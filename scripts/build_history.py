@@ -71,6 +71,14 @@ def latest_at_or_before(series, period, max_age=2):
             return d[p], p
     return None, None
 
+def yoy_at_or_before(series, period, max_age=1):
+    for lag in range(max_age + 1):
+        p = month_shift(period, -lag)
+        y = yoy(series, p)
+        if y is not None:
+            return y, p
+    return None, None
+
 def breadth_at(dataset, period):
     vals = []
     for s in (dataset or {}).get('series', {}).values():
@@ -85,7 +93,7 @@ def score_components(prod_ds, sales_series, ndc_series, period):
     mfg = (prod_ds or {}).get('series', {}).get('C', {})
     mfg_yoy = yoy(mfg, period)
     breadth = breadth_at(prod_ds, period)
-    sales_yoy = yoy(sales_series, period) if sales_series else None
+    sales_yoy, sales_p = yoy_at_or_before(sales_series, period, 1) if sales_series else (None, None)
     lead3 = change3(ndc_series.get('leading_no_trend', {}), period)
     pmi, pmi_p = latest_at_or_before(ndc_series.get('pmi', {}), period, 1)
     policy, policy_p = latest_at_or_before(ndc_series.get('policy_score', {}), period, 1)
@@ -109,7 +117,8 @@ def score_components(prod_ds, sales_series, ndc_series, period):
     add('breadth', '產業正成長廣度', breadth,
         None if breadth is None else (breadth - 50.0) * 2.0, '擴張廣度')
     add('sales_yoy', '製造業銷售 YoY', sales_yoy,
-        None if sales_yoy is None else sales_yoy / 12.0 * 100.0, '需求／銷售動能')
+        None if sales_yoy is None else sales_yoy / 12.0 * 100.0,
+        '需求／銷售動能（允許官方發布落後 1 個月）', sales_p)
     add('leading_3m', '國發會領先指標 3M', lead3,
         None if lead3 is None else lead3 / 1.5 * 100.0, '官方領先訊號')
     add('pmi', 'PMI', pmi,
@@ -197,7 +206,7 @@ def update_summary(summary, backtest_rows):
         'breadth': current['breadth'],
         'components': current['components'],
         'as_of': current['period'],
-        'method': '月度透明加權綜合分數：製造業生產30%、產業廣度20%、製造業銷售15%、國發會領先指標20%、PMI 10%、官方景氣綜合分數5%；缺值時重新正規化權重。不是國發會官方景氣燈號。',
+        'method': '月度透明加權綜合分數：製造業生產30%、產業廣度20%、製造業銷售15%、國發會領先指標20%、PMI 10%、官方景氣綜合分數5%；銷售資料允許最多落後 1 個月並標示來源期，其他缺值則重新正規化權重。不是國發會官方景氣燈號。',
     })
     scores = [r['score'] for r in backtest_rows if r.get('score') is not None]
     if scores:
@@ -230,8 +239,8 @@ def update_summary(summary, backtest_rows):
     summary['methodology'] = (
         '規則式經濟情報引擎：只使用 Elephant 已驗證官方資料；月度產業採同月 YoY，'
         '計算加速度、3M/6M 動能、12M 百分位、廣度、背離與轉折。Cycle Score 僅使用月度／高頻資料，'
-        '可做歷史重建；不同基期序列不硬接。Cycle Score 為透明自訂分數，不等同國發會官方燈號；'
-        '生成式 AI 不參與事實或分數計算。'
+        '銷售資料若因官方發布時差最多允許落後 1 個月並保留來源期；不同基期序列不硬接。'
+        'Cycle Score 為透明自訂分數，不等同國發會官方燈號；生成式 AI 不參與事實或分數計算。'
     )
     return summary
 
@@ -302,7 +311,8 @@ def generate():
         'formula_version': 'monthly-v1',
         'formula': {
             'weights': WEIGHTS,
-            'note': 'Historical reconstruction uses currently published revised official series; it is not a real-time vintage backtest.',
+            'sales_release_lag_months': 1,
+            'note': 'Historical reconstruction uses currently published revised official series; it is not a real-time vintage backtest. Sales may use the latest available release up to one month behind the cycle month.',
         },
         'cycle_history': [{k: v for k, v in r.items() if k != 'components'} for r in rows],
         'regime_changes': regime_changes(rows),
