@@ -2,7 +2,7 @@
 import argparse,datetime as dt,html,json,re,sys
 from pathlib import Path
 from common import TZ,URLS,load_json,save_json,request_bytes,decode_text
-import source_macro,source_moea,source_ris
+import build_summary,source_macro,source_moea,source_ris
 
 def segis(offline=False):
  if offline:return {'status':'blocked','latest_period':None,'message':'SEGIS 未使用測試快照；不產生假資料。','source_url':URLS['segis_catalog']}
@@ -22,12 +22,12 @@ def coverage(status):
    d=s.get('data',[]); rows.append({'source':'moea','dataset':ds,'indicator':key,'name':s.get('name',key),'frequency':'monthly/quarterly','points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
  save_json('coverage.json',{'datasets':rows,'source_status':status['sources']})
 def main():
- ap=argparse.ArgumentParser(); ap.add_argument('--offline-dir',type=Path); a=ap.parse_args(); now=dt.datetime.now(TZ).replace(microsecond=0).isoformat(); old=load_json('status.json',{'sources':{}}); status={'last_check_at':now,'last_successful_sync_at':old.get('last_successful_sync_at'),'pipeline_version':3,'schedule':'每日 18:17 Asia/Taipei','sources':{}}; bad=[]
+ ap=argparse.ArgumentParser(); ap.add_argument('--offline-dir',type=Path); a=ap.parse_args(); now=dt.datetime.now(TZ).replace(microsecond=0).isoformat(); old=load_json('status.json',{'sources':{}}); status={'last_check_at':now,'last_successful_sync_at':old.get('last_successful_sync_at'),'pipeline_version':4,'schedule':'每日 18:17 Asia/Taipei','sources':{}}; bad=[]
  for sid,fn in [('dgbas',source_macro.update),('moea',source_moea.update),('ris',source_ris.update)]:
   try:status['sources'][sid]={'status':'ok',**fn(a.offline_dir)}
   except Exception as e:
    bad.append(sid); prev=old.get('sources',{}).get(sid,{}); status['sources'][sid]={'status':'degraded','latest_period':prev.get('latest_period'),'rows':prev.get('rows'),'message':f'保留上一版資料；本次更新失敗：{type(e).__name__}: {e}'}; print(sid,'DEGRADED',repr(e),file=sys.stderr)
  status['sources']['segis']=segis(bool(a.offline_dir)); status['critical_failures']=bad
  if not bad:status['last_successful_sync_at']=now
- save_json('status.json',status); coverage(status); print(json.dumps(status,ensure_ascii=False,indent=2))
+ save_json('status.json',status); coverage(status); build_summary.generate(); print(json.dumps(status,ensure_ascii=False,indent=2))
 if __name__=='__main__':main()
