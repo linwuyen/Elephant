@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from common import TZ, URLS, load_json, save_json, request_bytes, decode_text
 import build_summary
+import build_history
 import revision_tracker
 import source_macro
 import source_moea
@@ -73,7 +74,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 5,
+        'pipeline_version': 6,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -81,7 +82,6 @@ def main():
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
-    # NDC is now a first-class critical source because it provides the official leading/coincident indicators.
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
@@ -91,6 +91,7 @@ def main():
     coverage(status)
     revision_tracker.record(before, now)
     build_summary.generate()
+    build_history.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 if __name__ == '__main__':
