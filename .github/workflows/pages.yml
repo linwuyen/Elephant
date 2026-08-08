@@ -12,6 +12,8 @@ on:
       - 'summary.css'
       - 'summary.js'
       - 'leading.js'
+      - 'history.css'
+      - 'history.js'
       - 'data/**'
       - 'scripts/validate_data.py'
       - '.github/workflows/pages.yml'
