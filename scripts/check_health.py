@@ -17,6 +17,7 @@ ndc = json.loads((DATA / 'ndc.json').read_text(encoding='utf-8')) if (DATA / 'nd
 errors = []
 
 # Core intelligence depends on all four critical official sources.
+# Final v6 gate: source health + publication freshness must both pass.
 for source in ('dgbas', 'moea', 'ris', 'ndc'):
     if status.get('sources', {}).get(source, {}).get('status') != 'ok':
         errors.append(f'{source}: source status is not ok')
