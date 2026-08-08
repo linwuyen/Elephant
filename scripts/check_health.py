@@ -16,6 +16,7 @@ industry = json.loads((DATA / 'industry.json').read_text(encoding='utf-8'))
 ndc = json.loads((DATA / 'ndc.json').read_text(encoding='utf-8')) if (DATA / 'ndc.json').exists() else {}
 errors = []
 
+# Core intelligence depends on all four critical official sources.
 for source in ('dgbas', 'moea', 'ris', 'ndc'):
     if status.get('sources', {}).get(source, {}).get('status') != 'ok':
         errors.append(f'{source}: source status is not ok')
