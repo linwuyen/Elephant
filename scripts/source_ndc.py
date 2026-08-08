@@ -152,7 +152,9 @@ def parse_signal_rows(rows):
         raise ValueError('NDC business-cycle CSV empty')
     keys = list(rows[0])
     date_col = find_col(keys, ('Date', '日期', '資料期'))
-    signal_col = find_col(keys, ('景氣對策信號', '景氣燈號'))
+    signal_col = next((k for k in keys if k in ('景氣對策信號', '景氣燈號')), None)
+    if not signal_col:
+        signal_col = next((k for k in keys if ('景氣對策信號' in k or '景氣燈號' in k) and '分數' not in k), None)
     cols = {key: find_col(keys, aliases) for key, aliases in FIELD_MAP.items()}
     if not date_col or not cols['leading_no_trend'] or not cols['coincident_no_trend']:
         raise ValueError(f'NDC required columns missing: {keys[:20]}')
