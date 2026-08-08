@@ -1,0 +1,72 @@
+name: Refresh official data
+
+on:
+  schedule:
+    - cron: '17 18 * * *'
+      timezone: 'Asia/Taipei'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/update-data.yml'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: official-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch official sources and rebuild web data
+        run: python scripts/update_data.py
+      - name: Validate rebuilt data
+        run: python scripts/validate_data.py
+      - name: Commit refreshed data and heartbeat
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/
+          if git diff --cached --quiet; then
+            echo 'No published data changes.'
+          else
+            git commit -m 'data: automated official refresh'
+            git push
+          fi
+      - name: Enforce critical source health
+        run: python scripts/check_health.py
+      - name: Close stale failure issue after recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(gh issue list --state open --search 'Official data refresh failed in:title' --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue close "$number" --comment 'Automated official-data refresh is healthy again.'
+          fi
+      - name: Open or update failure issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title='[automation] Official data refresh failed'
+          number=$(gh issue list --state open --search 'Official data refresh failed in:title' --json number --jq '.[0].number // empty')
+          body="Automated refresh failed. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
