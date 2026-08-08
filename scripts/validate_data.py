@@ -14,9 +14,9 @@ def check_series(name,data,min_points=1):
     for p,v in data:
         if not isinstance(v,(int,float)) or not math.isfinite(v): fail(f'{name}: invalid value at {p}: {v}')
 
-macro=load('macro.json'); pop=load('population.json'); ind=load('industry.json'); status=load('status.json')
+macro=load('macro.json'); pop=load('population.json'); ind=load('industry.json'); status=load('status.json'); summary=load('summary.json')
 for iid,minp in [('dgbas.gdp.growth_rate',20),('dgbas.cpi.yoy',10),('dgbas.gdp.nominal.production',8)]:
-    s=macro.get('series',{}).get(iid); 
+    s=macro.get('series',{}).get(iid)
     if not s: fail('missing '+iid)
     check_series(iid,s['data'],minp)
 gdp=macro['series']['dgbas.gdp.nominal.production']['data'][-1][1]
@@ -38,8 +38,15 @@ for key,s in prod['series'].items():
         if not (0 <= v < 2000): fail(f'industry index implausible {key} {p}: {v}')
 for sid in ('dgbas','moea','ris','segis'):
     if sid not in status.get('sources',{}): fail('missing source status '+sid)
+if summary.get('version')!=1: fail('summary version missing/unsupported')
+if not summary.get('headline') or not summary.get('stance'): fail('summary headline missing')
+if len(summary.get('takeaways',[]))<3: fail('summary has fewer than 3 takeaways')
+if summary.get('data_last_check_at')!=status.get('last_check_at'): fail('summary not built from current status snapshot')
+breadth=summary.get('industry',{}).get('positive_breadth_pct')
+if breadth is not None and not (0<=breadth<=100): fail(f'invalid industry breadth: {breadth}')
 print('VALIDATION PASS')
 print('macro series:',len(macro['series']))
 print('county latest:',len(pop['county_latest']))
 print('industry datasets:',len(ind['datasets']))
+print('summary takeaways:',len(summary.get('takeaways',[])))
 print('critical failures:',status.get('critical_failures',[]))
