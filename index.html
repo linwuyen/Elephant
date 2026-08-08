@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Elephant：自動更新的台灣 GDP、CPI、人口與產業統計儀表板">
-<title>Elephant｜台灣經濟資料庫</title>
+<meta name="description" content="Elephant：自動更新的台灣經濟情報系統，整合 GDP、CPI、人口、產業與國發會景氣領先指標">
+<title>Elephant｜台灣經濟情報系統</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="summary.css">
@@ -14,7 +14,7 @@
 <div id="loading" class="loading"><div class="spinner"></div><div>載入最新官方資料…</div></div>
 <header class="hero">
   <div class="wrap hero-inner">
-    <div><div class="eyebrow">AUTO-UPDATED TAIWAN DATA</div><h1>Elephant</h1><p>台灣經濟、人口與產業的長期資料儀表板</p></div>
+    <div><div class="eyebrow">AUTO-UPDATED TAIWAN ECONOMIC INTELLIGENCE</div><h1>Elephant</h1><p>台灣經濟、人口、產業與景氣領先訊號的自動情報系統</p></div>
     <div class="hero-status"><span class="pulse"></span><div><b>每日自動檢查</b><small>18:17 · Asia/Taipei</small></div></div>
   </div>
 </header>
@@ -23,6 +23,7 @@
   <div class="cards" id="headlineCards"></div>
   <nav class="tabs" aria-label="主要頁籤">
     <button class="active" data-tab="overview">總覽</button>
+    <button data-tab="leading">領先指標</button>
     <button data-tab="macro">GDP／CPI</button>
     <button data-tab="population">人口</button>
     <button data-tab="industry">產業</button>
@@ -35,6 +36,11 @@
       <article class="panel"><div class="panel-head"><div><span class="kicker">DEMOGRAPHY</span><h2>人口與高齡化</h2></div></div><div class="chart"><canvas id="overviewPop"></canvas></div></article>
     </div>
     <article class="panel"><div class="panel-head"><div><span class="kicker">COUNTIES</span><h2>最新縣市人口結構</h2></div><span class="tag" id="countyPeriod">—</span></div><div class="table-wrap"><table><thead><tr><th>縣市</th><th>人口</th><th>0–14歲</th><th>65歲以上</th><th>65+占比</th><th>老化指數</th></tr></thead><tbody id="countyTable"></tbody></table></div></article>
+  </section>
+
+  <section id="leading" class="tab">
+    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">NATIONAL DEVELOPMENT COUNCIL</span><h2>景氣領先／同時指標與 PMI</h2><p class="sub" id="ndcLatest">載入國發會官方資料…</p></div><div class="controls"><label>指標<select id="leadingSelect"></select></label></div></div><div class="chart tall"><canvas id="leadingChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="leadingRows"></tbody></table></div></article>
+    <article class="notice"><strong>官方 vs Elephant</strong><p>國發會景氣燈號、領先／同時／落後指標均直接使用官方資料；Elephant Cycle Score 是獨立、透明的自訂綜合分數，兩者不混為一談。</p></article>
   </section>
 
   <section id="macro" class="tab">
@@ -54,10 +60,11 @@
     <article class="panel"><div class="panel-head"><div><span class="kicker">PIPELINE</span><h2>資料來源與更新狀態</h2></div><span class="tag" id="lastCheck">—</span></div><div class="source-grid" id="sourceCards"></div></article>
     <article class="panel"><div class="panel-head"><div><span class="kicker">COVERAGE</span><h2>目前網頁可查序列</h2></div></div><div class="table-wrap"><table><thead><tr><th>來源</th><th>資料集</th><th>指標 / 序列</th><th>點數</th><th>期間</th></tr></thead><tbody id="coverageRows"></tbody></table></div></article>
     <article class="notice"><strong>SEGIS</strong><p>工商家數欄位與匯入規則已保留，但在沒有穩定可重現的公開直鏈或 APP ID/API Key 前，不會自動寫入任何不可驗證數值。這是刻意的資料完整性設計。</p></article>
-    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查官方來源。</li><li>新資料先解析與驗證；失敗時保留上一版，不覆蓋正確資料。</li><li>每次更新自動產生 Elephant 經濟摘要，並與資料一起驗證。</li><li>有更新或健康狀態變化時自動 commit 到 <code>main</code>。</li><li>GitHub Pages 在資料 commit 後自動重新發布。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue。</li></ul></article>
+    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS 與 NDC 官方來源。</li><li>新資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次更新重算 Cycle Score、Momentum、Breadth、Turning Points、Divergences、Confidence 與摘要。</li><li>資料與摘要通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
   </section>
 </main>
-<footer class="wrap footer"><span>Elephant · Taiwan Economic Database</span><span id="footerSync"></span></footer>
+<footer class="wrap footer"><span>Elephant · Taiwan Economic Intelligence</span><span id="footerSync"></span></footer>
 <script src="app.js"></script>
+<script src="leading.js"></script>
 <script src="summary.js"></script>
 </body></html>
