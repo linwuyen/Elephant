@@ -1,12 +1,34 @@
 import io
 import re
 import zipfile
+from html.parser import HTMLParser
 from common import *
 
 CODES={'Z','C','I1','I2','I3','I4','24','25','26','27','28','29','30','31','34','2610','2611','2612','2613','2640'}
 KEYWORDS=('積體電路','半導體封裝','半導體測試')
-SALES_VOLUME_PRIMARY='https://service.moea.gov.tw/EE520/opendata/%E7%B6%93%E6%BF%9F%E9%83%A8%E7%B5%B1%E8%A8%88%E8%99%95_%E8%A3%BD%E9%80%A0%E6%A5%AD%E9%8A%B7%E5%94%AE%E9%87%8F%E6%8C%87%E6%95%B8_%E6%8C%89%E5%9B%9B%E5%A4%A7%E8%A1%8C%E6%A5%AD%E7%B5%B1%E8%A8%88.csv'
-SALES_VOLUME_BACKUP='https://dmz9.moea.gov.tw/gmweb/opendata/%E7%B6%93%E6%BF%9F%E9%83%A8%E7%B5%B1%E8%A8%88%E8%99%95_%E8%A3%BD%E9%80%A0%E6%A5%AD%E9%8A%B7%E5%94%AE%E9%87%8F%E6%8C%87%E6%95%B8.zip'
+SALES_INDEX_PAGE='https://service.moea.gov.tw/EE521/common/Common.aspx?code=D&no=5'
+
+SALES_POS={
+ 'C':(0,'製造業'),'I1':(1,'金屬機電工業'),'24':(2,'基本金屬製造業'),'25':(3,'金屬製品製造業'),
+ '28':(4,'電力設備及配備製造業'),'29':(5,'機械設備製造業'),'30':(6,'汽車及其零件製造業'),
+ '31':(7,'其他運輸工具及其零件製造業'),'34':(8,'產業用機械設備維修及安裝業'),
+ 'I2':(9,'資訊電子工業'),'26':(10,'電子零組件製造業'),'27':(11,'電腦、電子產品及光學製品製造業'),
+ 'I3':(12,'化學工業'),'I4':(22,'民生工業')}
+
+class RowsParser(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.rows=[]; self.row=None; self.cell=None
+    def handle_starttag(self,tag,attrs):
+        if tag=='tr': self.row=[]
+        elif tag in ('td','th') and self.row is not None: self.cell=[]
+    def handle_data(self,data):
+        if self.cell is not None: self.cell.append(data)
+    def handle_endtag(self,tag):
+        if tag in ('td','th') and self.cell is not None and self.row is not None:
+            self.row.append(re.sub(r'\s+',' ',''.join(self.cell)).strip()); self.cell=None
+        elif tag=='tr' and self.row is not None:
+            if self.row:self.rows.append(self.row)
+            self.row=None
 
 def pick(row,*keys):
     for key in keys:
@@ -39,13 +61,9 @@ def decode_resource(body,url):
     if not rows: raise ValueError(f'official resource returned no rows: {url}')
     return rows
 
-def resource_rows(offline,filename,url,backups=()):
-    if offline: return decode_resource(offline_bytes(offline,filename),str(Path(offline)/filename))
-    errors=[]
-    for candidate in (url,*backups):
-        try:return decode_resource(request_bytes(candidate)[0],candidate)
-        except Exception as e:errors.append(f'{candidate}: {type(e).__name__}: {e}')
-    raise RuntimeError('all official resource candidates failed | '+' | '.join(errors))
+def resource_rows(offline,filename,url):
+    body=offline_bytes(offline,filename) if offline else request_bytes(url)[0]
+    return decode_resource(body,url)
 
 def infer_unit(rows,fallback):
     units=[str(pick(r,'計量單位','單位') or '').strip() for r in rows if pick(r,'計量單位','單位')]
@@ -74,31 +92,81 @@ def parse(rows,value_cols,aliases=()):
         dedup={p:v for p,v in x['data']}; x['data']=[[p,v] for p,v in sorted(dedup.items())]
     return grouped
 
+def live_sales_index():
+    body=request_bytes(SALES_INDEX_PAGE,60,3)[0]
+    text=decode_text(body)
+    if '製造業銷售指數' not in text or '110年=100' not in text:
+        raise ValueError('MOEA live sales-index page signature changed')
+    hp=RowsParser(); hp.feed(text); current_year=None
+    series={k:{'name':name,'data':[]} for k,(pos,name) in SALES_POS.items()}
+    for row in hp.rows:
+        for cell in row:
+            m=re.fullmatch(r'(\d{3})年',cell)
+            if m: current_year=int(m.group(1))+1911; break
+        mi=next((i for i,c in enumerate(row) if re.fullmatch(r'\d{1,2}月',c)),None)
+        if mi is None or current_year is None: continue
+        month=int(re.sub(r'\D','',row[mi])); values=[]
+        for cell in row[mi+1:]:
+            v=num(cell)
+            if v is not None: values.append(v)
+        if len(values)<23: continue
+        period=f'{current_year:04d}-{month:02d}'
+        for key,(pos,name) in SALES_POS.items():
+            if pos<len(values): series[key]['data'].append([period,values[pos]])
+    for item in series.values():
+        item['data']=[[p,v] for p,v in sorted(dict(item['data']).items())]
+    if len(series['C']['data'])<5: raise ValueError(f'MOEA live sales-index parse too few months: {len(series["C"]["data"])}')
+    return {'indicator_id':'moea.manufacturing.sales_index_2021','name':'製造業銷售指數（現行基期）','unit':'index_2021_100','series':series}
+
 def update(offline=None):
-    old=load_json('industry.json',{'datasets':{}}); out={'generated_from':'automated_official_sources','datasets':dict(old.get('datasets',{}))}; total=0
-    specs=[
-      ('moea.industry.production','moea_industrial_production.csv',URLS['moea_indprod'],(),'moea.industry.production_index','工業生產指數','index_2021_100',('生產指數',),('統計值(指數)',)),
-      ('moea.manufacturing.sales_volume','moea_manufacturing_sales_volume_index.csv',SALES_VOLUME_PRIMARY,(SALES_VOLUME_BACKUP,),'moea.manufacturing.sales_volume_index','製造業銷售指數','index_2021_100',('銷售量指數','銷售指數'),('統計值(指數)','統計值')),
-      ('moea.manufacturing.sales_value','moea_manufacturing_sales_value.csv',URLS['moea_sales_value'],(),'moea.manufacturing.sales_value','製造業銷售價值','thousand_ntd',('銷售價值',),('統計值(金額)','統計值'))]
-    for ds,fn,url,backups,iid,name,fallback,aliases,vcols in specs:
-        rows=resource_rows(offline,fn,url,backups); total+=len(rows); series=parse(rows,vcols,aliases)
-        if not series:
-            stats=sorted({str(pick(r,'統計項目','項目') or '').strip() for r in rows})[:12]
-            raise ValueError(f'MOEA parse empty: {ds}; columns={list(rows[0]) if rows else []}; stats={stats}')
-        out['datasets'][ds]={'indicator_id':iid,'name':name,'unit':infer_unit(rows,fallback),'series':series}
-    rows=resource_rows(offline,'moea_manufacturing_investment_operations.csv',URLS['moea_investment']); total+=len(rows)
-    inv={'name':'製造業投資及營運','unit':'thousand_ntd','series':{}}
-    for aliases,iid,name in [(('營業額',),'moea.manufacturing.operating_revenue','製造業營業額'),(('固定資產增購額','固定資產增購'),'moea.manufacturing.fixed_asset_additions','製造業固定資產增購額')]:
-        data=[]
-        for r in rows:
-            stat=str(pick(r,'統計項目','項目') or '').strip()
-            if not any(a in stat for a in aliases):continue
-            y=pick(r,'資料期(民國年)','年度'); q=str(pick(r,'資料期(季)','季') or '').strip(); v=num(pick(r,'統計值(金額)','統計值'))
-            if y and q and v is not None:
-                qn=re.sub(r'\D','',q)
-                if qn:data.append([f'{roc_year(y)}-Q{qn}',v])
-        data=[[p,v] for p,v in sorted(dict(data).items())]
-        if not data:raise ValueError(f'MOEA investment parse empty: {iid}')
-        inv['series'][iid]={'name':name,'unit':'thousand_ntd','data':data}
-    out['datasets']['moea.manufacturing.investment']=inv; save_json('industry.json',out)
-    return {'latest_period':max_period(out),'rows':total,'message':'MOEA official d/f/ec + sales-index resource refreshed'}
+    old=load_json('industry.json',{'datasets':{}})
+    out={'generated_from':'automated_official_sources','datasets':dict(old.get('datasets',{}))}; total=0; warnings=[]
+
+    # Required core dataset: current industrial production.
+    rows=resource_rows(offline,'moea_industrial_production.csv',URLS['moea_indprod']); total+=len(rows)
+    series=parse(rows,('統計值(指數)','統計值'),('生產指數',))
+    if not series: raise ValueError('MOEA core production parse empty')
+    out['datasets']['moea.industry.production']={'indicator_id':'moea.industry.production_index','name':'工業生產指數','unit':infer_unit(rows,'index_2021_100'),'series':series}
+
+    # Required current sales index. Offline regression uses the archived official CSV;
+    # live runs use MOEA's current statistics page to avoid retired e.csv/dmz9 endpoints.
+    if offline:
+        rows=resource_rows(offline,'moea_manufacturing_sales_volume_index.csv',URLS['moea_sales_volume']); total+=len(rows)
+        oldseries=parse(rows,('統計值(指數)','統計值'),('銷售量指數','銷售指數'))
+        if not oldseries: raise ValueError('MOEA archived sales-volume parse empty')
+        out['datasets']['moea.manufacturing.sales_volume']={'indicator_id':'moea.manufacturing.sales_volume_index','name':'製造業銷售量指數（歷史基期）','unit':infer_unit(rows,'index_2016_100'),'series':oldseries}
+    else:
+        out['datasets']['moea.manufacturing.sales_index_current']=live_sales_index()
+
+    # Supplemental legacy datasets: preserve the last good copy if MOEA retires the old download URL.
+    try:
+        rows=resource_rows(offline,'moea_manufacturing_sales_value.csv',URLS['moea_sales_value']); total+=len(rows)
+        series=parse(rows,('統計值(金額)','統計值'),('銷售價值',))
+        if series: out['datasets']['moea.manufacturing.sales_value']={'indicator_id':'moea.manufacturing.sales_value','name':'製造業銷售價值','unit':infer_unit(rows,'thousand_ntd'),'series':series}
+        else: warnings.append('sales_value parser returned no usable series; retained last-good copy')
+    except Exception as e:
+        warnings.append(f'sales_value legacy endpoint unavailable; retained last-good copy ({type(e).__name__})')
+
+    try:
+        rows=resource_rows(offline,'moea_manufacturing_investment_operations.csv',URLS['moea_investment']); total+=len(rows)
+        inv={'name':'製造業投資及營運','unit':'thousand_ntd','series':{}}
+        for aliases,iid,name in [(('營業額',),'moea.manufacturing.operating_revenue','製造業營業額'),(('固定資產增購額','固定資產增購'),'moea.manufacturing.fixed_asset_additions','製造業固定資產增購額')]:
+            data=[]
+            for r in rows:
+                stat=str(pick(r,'統計項目','項目') or '').strip()
+                if not any(a in stat for a in aliases):continue
+                y=pick(r,'資料期(民國年)','年度'); q=str(pick(r,'資料期(季)','季') or '').strip(); v=num(pick(r,'統計值(金額)','統計值'))
+                if y and q and v is not None:
+                    qn=re.sub(r'\D','',q)
+                    if qn:data.append([f'{roc_year(y)}-Q{qn}',v])
+            data=[[p,v] for p,v in sorted(dict(data).items())]
+            if data: inv['series'][iid]={'name':name,'unit':'thousand_ntd','data':data}
+        if inv['series']: out['datasets']['moea.manufacturing.investment']=inv
+        else: warnings.append('investment parser returned no usable series; retained last-good copy')
+    except Exception as e:
+        warnings.append(f'investment legacy endpoint unavailable; retained last-good copy ({type(e).__name__})')
+
+    save_json('industry.json',out)
+    message='MOEA core production + current sales index refreshed'
+    if warnings: message+='; warnings: '+'; '.join(warnings)
+    return {'latest_period':max_period(out),'rows':total,'message':message,'warnings':warnings}
