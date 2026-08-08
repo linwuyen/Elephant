@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="summary.css">
+<link rel="stylesheet" href="history.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -24,6 +25,7 @@
   <nav class="tabs" aria-label="主要頁籤">
     <button class="active" data-tab="overview">總覽</button>
     <button data-tab="leading">領先指標</button>
+    <button data-tab="history">情報歷史</button>
     <button data-tab="macro">GDP／CPI</button>
     <button data-tab="population">人口</button>
     <button data-tab="industry">產業</button>
@@ -39,8 +41,17 @@
   </section>
 
   <section id="leading" class="tab">
-    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">NATIONAL DEVELOPMENT COUNCIL</span><h2>景氣領先／同時指標與 PMI</h2><p class="sub" id="ndcLatest">載入國發會官方資料…</p></div><div class="controls"><label>指標<select id="leadingSelect"></select></label></div></div><div class="chart tall"><canvas id="leadingChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="leadingRows"></tbody></table></div></article>
+    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">NATIONAL DEVELOPMENT COUNCIL</span><h2>景氣領先／同時指標與 PMI</h2><p class="sub" id="ndcLatest">載入國發會官方資料…</p></div><div class="controls"><label>指標<select id="leadingSelect"></select></label><button class="secondary" id="leadingCsv">下載 CSV</button><a class="secondary" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener">官方資料</a></div></div><div class="chart tall"><canvas id="leadingChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="leadingRows"></tbody></table></div></article>
     <article class="notice"><strong>官方 vs Elephant</strong><p>國發會景氣燈號、領先／同時／落後指標均直接使用官方資料；Elephant Cycle Score 是獨立、透明的自訂綜合分數，兩者不混為一談。</p></article>
+  </section>
+
+  <section id="history" class="tab">
+    <article class="panel history-panel"><div class="panel-head controls-head"><div><span class="kicker">CYCLE HISTORY</span><h2>Elephant Cycle Score 歷史重建</h2><p class="sub" id="cycleHistoryMeta">載入歷史情報…</p></div><div class="controls"><button class="secondary" id="cycleCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="cycleHistoryChart"></canvas></div><p class="intel-history-note">歷史分數使用目前官方已修訂序列，以同一套月度公式回算，適合比較景氣位置與轉折；它不是逐月保存的 real-time vintage backtest。真正的資料版本差異另由下方「情報快照」與「官方修正紀錄」保留。</p><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>Cycle Score</th><th>Regime</th><th>Momentum</th><th>Breadth</th><th>PMI</th><th>官方分數</th></tr></thead><tbody id="cycleHistoryRows"></tbody></table></div></article>
+    <div class="history-grid">
+      <article class="panel"><div class="panel-head"><div><span class="kicker">REGIME CHANGES</span><h2>景氣狀態轉換</h2></div></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>原狀態</th><th></th><th>新狀態</th><th>分數</th></tr></thead><tbody id="regimeRows"></tbody></table></div></article>
+      <article class="panel"><div class="panel-head"><div><span class="kicker">VERSIONED BRIEFS</span><h2>情報快照</h2></div></div><div class="table-wrap compact"><table><thead><tr><th>建立時間</th><th>Score</th><th>狀態</th><th>製造業 YoY</th><th>Leading 3M</th><th>PMI</th><th>摘要</th></tr></thead><tbody id="snapshotRows"></tbody></table></div></article>
+    </div>
+    <article class="panel"><div class="panel-head"><div><span class="kicker">OFFICIAL REVISIONS</span><h2>官方歷史值修正紀錄</h2><p class="sub" id="revisionHistoryMeta">載入 revision history…</p></div></div><div class="table-wrap"><table><thead><tr><th>偵測時間</th><th>來源</th><th>序列</th><th>期間</th><th>舊值</th><th>新值</th><th>差異</th></tr></thead><tbody id="revisionHistoryRows"></tbody></table></div></article>
   </section>
 
   <section id="macro" class="tab">
@@ -58,13 +69,22 @@
 
   <section id="health" class="tab">
     <article class="panel"><div class="panel-head"><div><span class="kicker">PIPELINE</span><h2>資料來源與更新狀態</h2></div><span class="tag" id="lastCheck">—</span></div><div class="source-grid" id="sourceCards"></div></article>
+    <article class="panel"><div class="panel-head"><div><span class="kicker">PROVENANCE</span><h2>官方資料來源</h2></div></div><div class="source-links">
+      <a class="source-link" href="https://data.gov.tw/dataset/130489" target="_blank" rel="noopener"><b>GDP 成長／CPI 官方再發布</b><span>政府資料開放平台 · 原始來源含主計總處</span></a>
+      <a class="source-link" href="https://data.gov.tw/dataset/43372" target="_blank" rel="noopener"><b>名目 GDP／產業 GDP</b><span>國發會開放資料 · 資料來源主計總處</span></a>
+      <a class="source-link" href="https://service.moea.gov.tw/EE520/" target="_blank" rel="noopener"><b>經濟部統計資料</b><span>工業生產、製造業銷售與產業序列</span></a>
+      <a class="source-link" href="https://www.ris.gov.tw/documents/data/en/3" target="_blank" rel="noopener"><b>戶政人口資料</b><span>內政部戶政司歷史人口資料</span></a>
+      <a class="source-link" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener"><b>景氣指標與燈號</b><span>國發會領先／同時／落後指標</span></a>
+      <a class="source-link" href="https://data.gov.tw/dataset/6100" target="_blank" rel="noopener"><b>PMI / NMI</b><span>國發會採購經理人指數</span></a>
+    </div></article>
     <article class="panel"><div class="panel-head"><div><span class="kicker">COVERAGE</span><h2>目前網頁可查序列</h2></div></div><div class="table-wrap"><table><thead><tr><th>來源</th><th>資料集</th><th>指標 / 序列</th><th>點數</th><th>期間</th></tr></thead><tbody id="coverageRows"></tbody></table></div></article>
     <article class="notice"><strong>SEGIS</strong><p>工商家數欄位與匯入規則已保留，但在沒有穩定可重現的公開直鏈或 APP ID/API Key 前，不會自動寫入任何不可驗證數值。這是刻意的資料完整性設計。</p></article>
-    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS 與 NDC 官方來源。</li><li>新資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次更新重算 Cycle Score、Momentum、Breadth、Turning Points、Divergences、Confidence 與摘要。</li><li>資料與摘要通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
+    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS 與 NDC 官方來源。</li><li>新資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次更新重算 Cycle Score、Momentum、Breadth、Turning Points、Divergences、Confidence 與摘要。</li><li>Cycle Score 使用同一套月度／高頻公式建立歷史重建，並保留資料版本快照。</li><li>資料與摘要通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
   </section>
 </main>
 <footer class="wrap footer"><span>Elephant · Taiwan Economic Intelligence</span><span id="footerSync"></span></footer>
 <script src="app.js"></script>
 <script src="leading.js"></script>
+<script src="history.js"></script>
 <script src="summary.js"></script>
 </body></html>

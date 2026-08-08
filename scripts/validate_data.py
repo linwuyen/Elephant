@@ -39,6 +39,7 @@ status = load('status.json')
 summary = load('summary.json')
 ndc = load('ndc.json', {})
 revisions = load('revisions.json', {'history': [], 'new_revisions': []})
+history = load('intelligence_history.json', {})
 
 for iid, minp in [('dgbas.gdp.growth_rate', 20), ('dgbas.cpi.yoy', 10), ('dgbas.gdp.nominal.production', 8)]:
     s = macro.get('series', {}).get(iid)
@@ -110,8 +111,15 @@ breadth = cycle.get('breadth')
 if breadth is not None and not (0 <= breadth <= 100):
     fail(f'invalid industry breadth: {breadth}')
 components = cycle.get('components', [])
-if len(components) < 3:
+if len(components) < 4:
     fail('cycle score has too few components')
+keys = {x.get('key') for x in components}
+if 'manufacturing_yoy' not in keys or 'leading_3m' not in keys:
+    fail('cycle score missing core monthly components')
+if any(x.get('name') == 'GDP 成長率' for x in components):
+    fail('annual GDP must not be mixed into monthly Cycle Score')
+if cycle.get('historical_percentile') is not None and not (0 <= cycle['historical_percentile'] <= 100):
+    fail('invalid cycle historical percentile')
 
 conf = summary.get('confidence', {})
 if conf.get('score') is None or not (0 <= conf['score'] <= 100):
@@ -138,6 +146,24 @@ for r in revisions.get('new_revisions', []):
     if not all(k in r for k in ('source', 'dataset', 'series', 'period', 'old', 'new')):
         fail('malformed revision record')
 
+if history.get('version') != 1 or history.get('formula_version') != 'monthly-v1':
+    fail('intelligence history version missing')
+cycle_history = history.get('cycle_history', [])
+if len(cycle_history) < 24:
+    fail(f'cycle history too short: {len(cycle_history)}')
+periods_hist = [x.get('period') for x in cycle_history]
+if periods_hist != sorted(periods_hist) or len(periods_hist) != len(set(periods_hist)):
+    fail('cycle history periods invalid')
+for row in cycle_history:
+    if row.get('score') is None or not (-100 <= row['score'] <= 100):
+        fail('cycle history score invalid')
+    if row.get('momentum_score') is None or not (-100 <= row['momentum_score'] <= 100):
+        fail('cycle history momentum invalid')
+if cycle.get('as_of') != cycle_history[-1].get('period'):
+    fail('current cycle score is not aligned with historical reconstruction')
+if history.get('snapshots') and history['snapshots'][-1].get('fingerprint') != snap.get('fingerprint'):
+    fail('latest intelligence snapshot fingerprint mismatch')
+
 print('VALIDATION PASS')
 print('macro series:', len(macro['series']))
 print('county latest:', len(pop['county_latest']))
@@ -147,5 +173,7 @@ print('summary takeaways:', len(summary.get('takeaways', [])))
 print('turning points:', len(summary.get('turning_points', [])))
 print('divergences:', len(summary.get('divergences', [])))
 print('cycle score:', summary.get('cycle', {}).get('score'))
+print('cycle history months:', len(cycle_history))
+print('intelligence snapshots:', len(history.get('snapshots', [])))
 print('confidence:', summary.get('confidence', {}).get('label'))
 print('critical failures:', status.get('critical_failures', []))
