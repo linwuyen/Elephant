@@ -38,7 +38,9 @@ jobs:
         run: python scripts/update_data.py
 
       - name: Validate rebuilt data
-        run: python scripts/validate_data.py
+        run: |
+          python scripts/validate_data.py
+          python scripts/validate_decision_scores.py
 
       - name: Commit refreshed data and heartbeat
         run: |
