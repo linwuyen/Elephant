@@ -40,11 +40,17 @@ jobs:
           import sys
           sys.path.insert(0, 'scripts')
           from common import decode_text, request_bytes
-          from source_decision import CBC_FIN_URL
-          body, _ = request_bytes(CBC_FIN_URL, 45, 2)
-          print('CBC_CSV_PREVIEW_BEGIN')
-          print(decode_text(body)[:5000])
-          print('CBC_CSV_PREVIEW_END')
+          urls=[
+            'https://www.cbc.gov.tw/public/data/EBOOKXLS/001_EF01_A4L.csv',
+            'https://www.cbc.gov.tw/public/data/EBOOKXLS/003_EF03_A4L.csv',
+            'https://www.cbc.gov.tw/public/data/EBOOKXLS/005_EF05_A4L.csv',
+            'https://www.cbc.gov.tw/public/data/EBOOKXLS/007_EF07_A4L.csv',
+          ]
+          for u in urls:
+            body,_=request_bytes(u,45,2)
+            print('CBC_CSV_PREVIEW_BEGIN',u)
+            print(decode_text(body)[:3500])
+            print('CBC_CSV_PREVIEW_END')
           PY
 
       - name: Fetch official sources and rebuild web data
