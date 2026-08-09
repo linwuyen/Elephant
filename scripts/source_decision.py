@@ -11,8 +11,12 @@ DOMESTIC_URL='https://service.moea.gov.tw/EE520/opendata/ea.csv'
 DOMESTIC_CATALOG='https://data.gov.tw/dataset/6842'
 LABOR_URL='https://apiservice.mol.gov.tw/OdService/download/A17030000J-000016-wWs'
 LABOR_CATALOG='https://data.gov.tw/dataset/13228'
-CBC_FIN_URL='https://www.cbc.gov.tw/public/data/EBOOKXLS/001_EF01_A4L.csv'
 CBC_FIN_CATALOG='https://www.cbc.gov.tw/tw/cp-532-104915-d9972-1.html'
+CBC_TABLES={
+ 'money':'https://www.cbc.gov.tw/public/data/EBOOKXLS/001_EF01_A4L.csv',
+ 'credit':'https://www.cbc.gov.tw/public/data/EBOOKXLS/003_EF03_A4L.csv',
+ 'markets':'https://www.cbc.gov.tw/public/data/EBOOKXLS/007_EF07_A4L.csv',
+}
 
 def dedup(data):
     return [[p,v] for p,v in sorted(dict(data).items(),key=lambda x:period_key(x[0]))]
@@ -66,60 +70,50 @@ def parse_labor(body):
     units={'unemployment_rate':'percent','avg_monthly_salary':'ntd','manufacturing_monthly_salary':'ntd','avg_monthly_hours':'hours','cpi_yoy':'percent'}
     return {k:{'name':names[k],'unit':units[k],'data':dedup(v)} for k,v in out.items() if v}
 
-def cbc_period(cell):
-    s=str(cell or '').strip().replace('年','/').replace('月','').replace('.','/').replace('-','/')
-    m=re.search(r'(?<!\d)(20\d{2})\s*/\s*(\d{1,2})(?!\d)',s)
-    if m:
-        y,mo=map(int,m.groups())
-        if 1<=mo<=12:return f'{y:04d}-{mo:02d}'
-    m=re.search(r'(?<!\d)(\d{2,3})\s*/\s*(\d{1,2})(?!\d)',s)
-    if m:
-        y,mo=map(int,m.groups())
-        if y<1911 and 1<=mo<=12:return f'{y+1911:04d}-{mo:02d}'
-    return None
+def cbc_month_rows(body, columns):
+    """Parse CBC Financial Statistics Monthly Report tables.
 
-def cbc_metric(label):
-    s=re.sub(r'\s+','',str(label or '')).upper()
-    yoy='年增' in s or '年成長' in s or 'YOY' in s
-    if 'M1B' in s:return 'm1b_yoy' if yoy else 'm1b'
-    if re.search(r'(^|[^A-Z0-9])M2([^A-Z0-9]|$)',s):return 'm2_yoy' if yoy else 'm2'
-    if '放款與投資' in s:return 'credit_yoy' if yoy else 'credit'
-    if '五大銀行' in s and '放款' in s and '利率' in s:return 'loan_rate'
-    return None
+    CBC lays months down rows: the first month carries ROC year + month (e.g. '115 1'),
+    later rows carry only the month. Fixed column positions are stable within each official
+    table and are safer than guessing multi-row merged headers.
+    """
+    out={k:[] for k in columns}; roc_year=None
+    for row in csv.reader(decode_text(body).splitlines()):
+        if not row:continue
+        first=str(row[0] or '').strip()
+        both=re.fullmatch(r'(\d{3})\s+(\d{1,2})',first)
+        one=re.fullmatch(r'(\d{1,2})',first)
+        if both:
+            roc_year=int(both.group(1)); month=int(both.group(2))
+        elif one and roc_year is not None:
+            month=int(one.group(1))
+        else:
+            continue
+        if not (1<=month<=12):continue
+        period=f'{roc_year+1911:04d}-{month:02d}'
+        for key,idx in columns.items():
+            if idx>=len(row):continue
+            v=num(row[idx])
+            if v is not None:out[key].append([period,v])
+    return {k:dedup(v) for k,v in out.items() if len(dedup(v))>=12}
 
-def parse_cbc_financial(body):
-    matrix=[[str(c or '').strip() for c in row] for row in csv.reader(decode_text(body).splitlines())]
-    collected={}
-    # Orientation A: periods appear across columns; metric names appear down rows.
-    for header in matrix:
-        pcols={i:cbc_period(c) for i,c in enumerate(header)}
-        pcols={i:p for i,p in pcols.items() if p}
-        if len(pcols)<3:continue
-        for row in matrix:
-            label=' '.join(row[:min(pcols)] if pcols else row[:4])
-            key=cbc_metric(label)
-            if not key:continue
-            for i,p in pcols.items():
-                if i<len(row):
-                    v=num(row[i])
-                    if v is not None:collected.setdefault(key,[]).append([p,v])
-    # Orientation B: periods appear down rows; metric names appear across header columns.
-    for header in matrix:
-        mcols={i:cbc_metric(c) for i,c in enumerate(header)}
-        mcols={i:k for i,k in mcols.items() if k}
-        if not mcols:continue
-        for row in matrix:
-            p=next((cbc_period(c) for c in row if cbc_period(c)),None)
-            if not p:continue
-            for i,key in mcols.items():
-                if i<len(row):
-                    v=num(row[i])
-                    if v is not None:collected.setdefault(key,[]).append([p,v])
-    names={'m1b':'貨幣總計數 M1B','m1b_yoy':'M1B 年增率','m2':'貨幣總計數 M2','m2_yoy':'M2 年增率','credit':'金融機構放款與投資','credit_yoy':'金融機構放款與投資年增率','loan_rate':'五大銀行新承做放款平均利率'}
-    units={'m1b':'value','m1b_yoy':'percent','m2':'value','m2_yoy':'percent','credit':'value','credit_yoy':'percent','loan_rate':'percent'}
-    out={k:{'name':names[k],'unit':units[k],'data':dedup(v)} for k,v in collected.items() if len(dedup(v))>=6}
-    if not any(k in out for k in ('m1b','m1b_yoy','m2','m2_yoy','credit','credit_yoy')):
-        raise ValueError('CBC important-financial-indicators CSV parse returned no core series')
+def parse_cbc_financial(bodies):
+    money=cbc_month_rows(bodies['money'],{'m1b_yoy':16,'m2_yoy':20})
+    credit=cbc_month_rows(bodies['credit'],{'credit_yoy':20})
+    markets=cbc_month_rows(bodies['markets'],{'interbank_rate':7,'stock_index':10,'exchange_rate':11})
+    raw={**money,**credit,**markets}
+    names={
+      'm1b_yoy':'M1B 年增率','m2_yoy':'M2 年增率','credit_yoy':'金融機構放款與投資年增率',
+      'interbank_rate':'金融業隔夜拆款加權平均利率','stock_index':'股價指數','exchange_rate':'銀行間美元收盤匯率',
+    }
+    units={'m1b_yoy':'percent','m2_yoy':'percent','credit_yoy':'percent','interbank_rate':'percent','stock_index':'index','exchange_rate':'ntd_per_usd'}
+    out={k:{'name':names[k],'unit':units[k],'data':v} for k,v in raw.items()}
+    for required in ('m1b_yoy','m2_yoy','credit_yoy','interbank_rate'):
+        if required not in out:raise ValueError('CBC monthly table missing '+required)
+    # Plausibility guards catch column shifts early.
+    for key in ('m1b_yoy','m2_yoy','credit_yoy'):
+        if not all(-30<float(v)<50 for _,v in out[key]['data'][-24:]):raise ValueError('CBC implausible '+key)
+    if not all(0<float(v)<20 for _,v in out['interbank_rate']['data'][-24:]):raise ValueError('CBC implausible interbank_rate')
     return out
 
 def update(_offline=None):
@@ -137,7 +131,9 @@ def update(_offline=None):
         for k,v in parsed.items():series['labor.'+k]=v
     except Exception as e:warnings.append(f'labor: {type(e).__name__}: {e}')
     try:
-        body,_=request_bytes(CBC_FIN_URL,60,3); parsed=parse_cbc_financial(body); rows+=sum(len(x['data']) for x in parsed.values())
+        bodies={}
+        for key,url in CBC_TABLES.items():bodies[key]=request_bytes(url,60,3)[0]
+        parsed=parse_cbc_financial(bodies); rows+=sum(len(x['data']) for x in parsed.values())
         for k,v in parsed.items():series['cbc.'+k]=v
     except Exception as e:warnings.append(f'cbc_financial: {type(e).__name__}: {e}')
     latest=max((s['data'][-1][0] for s in series.values() if s.get('data')),key=period_key,default=None)
