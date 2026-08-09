@@ -9,11 +9,13 @@ from pathlib import Path
 from common import TZ, URLS, load_json, save_json, request_bytes, decode_text
 import build_summary
 import build_history
+import build_decision_scores
 import revision_tracker
 import source_macro
 import source_moea
 import source_ndc
 import source_ris
+import source_decision
 
 def segis(offline=False):
     if offline:
@@ -33,6 +35,7 @@ def coverage(status):
     pop = load_json('population.json', {})
     ind = load_json('industry.json', {})
     ndc = load_json('ndc.json', {})
+    decision = load_json('decision_inputs.json', {})
     rows = []
     for iid, s in macro.get('series', {}).items():
         d = s.get('data', [])
@@ -47,6 +50,9 @@ def coverage(status):
     for iid, s in ndc.get('series', {}).items():
         d = s.get('data', [])
         rows.append({'source': 'ndc', 'dataset': 'ndc.business_cycle', 'indicator': iid, 'name': s.get('name', iid), 'frequency': 'monthly', 'points': len(d), 'period': f'{d[0][0]}..{d[-1][0]}' if d else '-'})
+    for iid, s in decision.get('series', {}).items():
+        d=s.get('data',[])
+        rows.append({'source':'decision','dataset':'official.decision_inputs','indicator':iid,'name':s.get('name',iid),'frequency':'monthly','points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
     save_json('coverage.json', {'datasets': rows, 'source_status': status['sources']})
 
 def refresh_source(status, bad, sid, fn, offline_dir, critical=True):
@@ -74,7 +80,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 6,
+        'pipeline_version': 7,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -83,6 +89,8 @@ def main():
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
+    # Supplemental direct official inputs. Scores remain usable through NDC fallbacks if one download drifts.
+    refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
     if not bad:
@@ -92,6 +100,7 @@ def main():
     revision_tracker.record(before, now)
     build_summary.generate()
     build_history.generate()
+    build_decision_scores.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 if __name__ == '__main__':

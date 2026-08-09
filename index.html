@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Elephant：自動更新的台灣經濟情報系統，整合 GDP、CPI、人口、產業與國發會景氣領先指標">
+<meta name="description" content="Elephant：自動更新的台灣經濟情報系統，整合 GDP、CPI、人口、產業、景氣領先指標與決策分數">
 <title>Elephant｜台灣經濟情報系統</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="summary.css">
 <link rel="stylesheet" href="history.css">
+<link rel="stylesheet" href="decision.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div id="loading" class="loading"><div class="spinner"></div><div>載入最新官方資料…</div></div>
 <header class="hero">
   <div class="wrap hero-inner">
-    <div><div class="eyebrow">AUTO-UPDATED TAIWAN ECONOMIC INTELLIGENCE</div><h1>Elephant</h1><p>台灣經濟、人口、產業與景氣領先訊號的自動情報系統</p></div>
+    <div><div class="eyebrow">AUTO-UPDATED TAIWAN ECONOMIC INTELLIGENCE</div><h1>Elephant</h1><p>台灣經濟、人口、產業、領先訊號與決策分數的自動情報系統</p></div>
     <div class="hero-status"><span class="pulse"></span><div><b>每日自動檢查</b><small>18:17 · Asia/Taipei</small></div></div>
   </div>
 </header>
@@ -42,7 +43,7 @@
 
   <section id="leading" class="tab">
     <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">NATIONAL DEVELOPMENT COUNCIL</span><h2>景氣領先／同時指標與 PMI</h2><p class="sub" id="ndcLatest">載入國發會官方資料…</p></div><div class="controls"><label>指標<select id="leadingSelect"></select></label><button class="secondary" id="leadingCsv">下載 CSV</button><a class="secondary" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener">官方資料</a></div></div><div class="chart tall"><canvas id="leadingChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="leadingRows"></tbody></table></div></article>
-    <article class="notice"><strong>官方 vs Elephant</strong><p>國發會景氣燈號、領先／同時／落後指標均直接使用官方資料；Elephant Cycle Score 是獨立、透明的自訂綜合分數，兩者不混為一談。</p></article>
+    <article class="notice"><strong>官方 vs Elephant</strong><p>國發會景氣燈號、領先／同時／落後指標均直接使用官方資料；Elephant Cycle Score 與三個 Decision Score 是獨立、透明的自訂綜合分數，兩者不混為一談。</p></article>
   </section>
 
   <section id="history" class="tab">
@@ -54,18 +55,11 @@
     <article class="panel"><div class="panel-head"><div><span class="kicker">OFFICIAL REVISIONS</span><h2>官方歷史值修正紀錄</h2><p class="sub" id="revisionHistoryMeta">載入 revision history…</p></div></div><div class="table-wrap"><table><thead><tr><th>偵測時間</th><th>來源</th><th>序列</th><th>期間</th><th>舊值</th><th>新值</th><th>差異</th></tr></thead><tbody id="revisionHistoryRows"></tbody></table></div></article>
   </section>
 
-  <section id="macro" class="tab">
-    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">DGBAS / OFFICIAL REPUBLICATION</span><h2>總體經濟時間序列</h2></div><div class="controls"><label>指標<select id="macroSelect"></select></label><button class="secondary" id="macroCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="macroChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="macroRows"></tbody></table></div></article>
-  </section>
+  <section id="macro" class="tab"><article class="panel"><div class="panel-head controls-head"><div><span class="kicker">DGBAS / OFFICIAL REPUBLICATION</span><h2>總體經濟時間序列</h2></div><div class="controls"><label>指標<select id="macroSelect"></select></label><button class="secondary" id="macroCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="macroChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="macroRows"></tbody></table></div></article></section>
 
-  <section id="population" class="tab">
-    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">HOUSEHOLD REGISTRATION</span><h2>人口長期趨勢</h2></div><div class="controls"><label>指標<select id="popSelect"></select></label><button class="secondary" id="popCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="popChart"></canvas></div></article>
-    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">COUNTY HISTORY</span><h2>縣市人口與高齡化</h2></div><div class="controls"><label>縣市<select id="countySelect"></select></label><label>指標<select id="countyMetric"><option value="population">總人口</option><option value="share_65_plus">65歲以上占比</option><option value="aging_index">老化指數</option></select></label></div></div><div class="chart"><canvas id="countyChart"></canvas></div></article>
-  </section>
+  <section id="population" class="tab"><article class="panel"><div class="panel-head controls-head"><div><span class="kicker">HOUSEHOLD REGISTRATION</span><h2>人口長期趨勢</h2></div><div class="controls"><label>指標<select id="popSelect"></select></label><button class="secondary" id="popCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="popChart"></canvas></div></article><article class="panel"><div class="panel-head controls-head"><div><span class="kicker">COUNTY HISTORY</span><h2>縣市人口與高齡化</h2></div><div class="controls"><label>縣市<select id="countySelect"></select></label><label>指標<select id="countyMetric"><option value="population">總人口</option><option value="share_65_plus">65歲以上占比</option><option value="aging_index">老化指數</option></select></label></div></div><div class="chart"><canvas id="countyChart"></canvas></div></article></section>
 
-  <section id="industry" class="tab">
-    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">MOEA</span><h2>產業生產、銷售與投資</h2></div><div class="controls"><label>資料集<select id="industryDataset"></select></label><label>序列<select id="industrySeries"></select></label><button class="secondary" id="industryCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="industryChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="industryRows"></tbody></table></div></article>
-  </section>
+  <section id="industry" class="tab"><article class="panel"><div class="panel-head controls-head"><div><span class="kicker">MOEA</span><h2>產業生產、銷售與投資</h2></div><div class="controls"><label>資料集<select id="industryDataset"></select></label><label>序列<select id="industrySeries"></select></label><button class="secondary" id="industryCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="industryChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="industryRows"></tbody></table></div></article></section>
 
   <section id="health" class="tab">
     <article class="panel"><div class="panel-head"><div><span class="kicker">PIPELINE</span><h2>資料來源與更新狀態</h2></div><span class="tag" id="lastCheck">—</span></div><div class="source-grid" id="sourceCards"></div></article>
@@ -73,13 +67,17 @@
       <a class="source-link" href="https://data.gov.tw/dataset/130489" target="_blank" rel="noopener"><b>GDP 成長／CPI 官方再發布</b><span>政府資料開放平台 · 原始來源含主計總處</span></a>
       <a class="source-link" href="https://data.gov.tw/dataset/43372" target="_blank" rel="noopener"><b>名目 GDP／產業 GDP</b><span>國發會開放資料 · 資料來源主計總處</span></a>
       <a class="source-link" href="https://service.moea.gov.tw/EE520/" target="_blank" rel="noopener"><b>經濟部統計資料</b><span>工業生產、製造業銷售與產業序列</span></a>
+      <a class="source-link" href="https://data.gov.tw/dataset/6845" target="_blank" rel="noopener"><b>外銷訂單</b><span>Growth Persistence 需求領先來源</span></a>
+      <a class="source-link" href="https://data.gov.tw/dataset/6842" target="_blank" rel="noopener"><b>批發／零售／餐飲營業額</b><span>Domestic Demand 內需來源</span></a>
+      <a class="source-link" href="https://data.gov.tw/dataset/13228" target="_blank" rel="noopener"><b>薪資／工時／失業</b><span>勞動部公開之主計總處等月資料</span></a>
+      <a class="source-link" href="https://www.cbc.gov.tw/tw/lp-1046-1.html" target="_blank" rel="noopener"><b>央行 M2</b><span>Financial Conditions 貨幣條件</span></a>
       <a class="source-link" href="https://www.ris.gov.tw/documents/data/en/3" target="_blank" rel="noopener"><b>戶政人口資料</b><span>內政部戶政司歷史人口資料</span></a>
       <a class="source-link" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener"><b>景氣指標與燈號</b><span>國發會領先／同時／落後指標</span></a>
       <a class="source-link" href="https://data.gov.tw/dataset/6100" target="_blank" rel="noopener"><b>PMI / NMI</b><span>國發會採購經理人指數</span></a>
     </div></article>
     <article class="panel"><div class="panel-head"><div><span class="kicker">COVERAGE</span><h2>目前網頁可查序列</h2></div></div><div class="table-wrap"><table><thead><tr><th>來源</th><th>資料集</th><th>指標 / 序列</th><th>點數</th><th>期間</th></tr></thead><tbody id="coverageRows"></tbody></table></div></article>
-    <article class="notice"><strong>SEGIS</strong><p>工商家數欄位與匯入規則已保留，但在沒有穩定可重現的公開直鏈或 APP ID/API Key 前，不會自動寫入任何不可驗證數值。這是刻意的資料完整性設計。</p></article>
-    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS 與 NDC 官方來源。</li><li>新資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次更新重算 Cycle Score、Momentum、Breadth、Turning Points、Divergences、Confidence 與摘要。</li><li>Cycle Score 使用同一套月度／高頻公式建立歷史重建，並保留資料版本快照。</li><li>資料與摘要通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
+    <article class="notice"><strong>SEGIS</strong><p>工商家數欄位與匯入規則已保留，但在沒有穩定可重現的公開直鏈或 APP ID/API Key 前，不會自動寫入任何不可驗證數值。</p></article>
+    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS、NDC 與決策輸入官方來源。</li><li>新資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次更新重算 Cycle Score、Growth Persistence、Domestic Demand、Financial Conditions 與摘要。</li><li>所有 Score 缺值時重新正規化權重並降低 Confidence，不把缺值當 0。</li><li>資料通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
   </section>
 </main>
 <footer class="wrap footer"><span>Elephant · Taiwan Economic Intelligence</span><span id="footerSync"></span></footer>
@@ -87,4 +85,5 @@
 <script src="leading.js"></script>
 <script src="history.js"></script>
 <script src="summary.js"></script>
+<script src="decision.js"></script>
 </body></html>
