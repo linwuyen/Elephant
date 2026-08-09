@@ -117,18 +117,31 @@ def domestic_score(period,ndc,inputs):
     score,conf,parts=agg
     return {'period':period,'score':score,'label':label(score),'confidence':conf,'components':parts}
 
+def direct_yoy(inp,absolute_key,yoy_key,period,fallback=None):
+    ys=inp.get(yoy_key)
+    if ys:
+        v,p=latest_before(ys,period,2)
+        if v is not None:return float(v),p,'CBC'
+    s=inp.get(absolute_key) or fallback
+    if s:
+        v,p=latest_before(s,period,2)
+        y=yoy(s,p) if p else None
+        if y is not None:return y,p,'CBC' if inp.get(absolute_key) else 'NDC/CBC'
+    return None,None,None
+
 def financial_score(period,ndc,inputs):
     inp=inputs.get('series',{})
-    m1=ndc.get('m1b',{}); m1v,m1p=latest_before(m1,period,2); m1y=yoy(m1,m1p) if m1p else None
-    m2=inp.get('cbc.m2_yoy'); m2v,m2p=latest_before(m2,period,2)
-    credit=ndc.get('financial_loans_investments',{}); cv,cp=latest_before(credit,period,2); cy=yoy(credit,cp) if cp else None
-    rate=ndc.get('new_loan_rate',{}); rv,rp=latest_before(rate,period,2); r12=value(rate,month_shift(rp,-12)) if rp else None; rdelta=None if rv is None or r12 is None else float(rv)-float(r12)
+    m1y,m1p,m1src=direct_yoy(inp,'cbc.m1b','cbc.m1b_yoy',period,ndc.get('m1b'))
+    m2y,m2p,m2src=direct_yoy(inp,'cbc.m2','cbc.m2_yoy',period,None)
+    cy,cp,csrc=direct_yoy(inp,'cbc.credit','cbc.credit_yoy',period,ndc.get('financial_loans_investments'))
+    rate=inp.get('cbc.loan_rate') or ndc.get('new_loan_rate',{})
+    rv,rp=latest_before(rate,period,2); r12=value(rate,month_shift(rp,-12)) if rp else None; rdelta=None if rv is None or r12 is None else float(rv)-float(r12)
     stocks=ndc.get('stock_index',{}); sv,sp=latest_before(stocks,period,1); s6=change(stocks,sp,6) if sp else None
     parts=[
-      component('m1b','M1B',m1y,None if m1y is None else m1y/8*100,WEIGHTS['financial']['m1b'],m1p,'M1B YoY','NDC/CBC'),
-      component('m2','M2',m2v,None if m2v is None else float(m2v)/7*100,WEIGHTS['financial']['m2'],m2p,'央行 M2 年增率','CBC'),
-      component('credit','金融機構放款與投資',cy,None if cy is None else cy/8*100,WEIGHTS['financial']['credit'],cp,'放款與投資 YoY','NDC/CBC'),
-      component('loan_rate','新承做放款利率',rdelta,None if rdelta is None else -rdelta/.75*100,WEIGHTS['financial']['loan_rate'],rp,'相較一年前利率下降為正向','NDC/CBC'),
+      component('m1b','M1B',m1y,None if m1y is None else m1y/8*100,WEIGHTS['financial']['m1b'],m1p,'M1B YoY',m1src or 'CBC'),
+      component('m2','M2',m2y,None if m2y is None else m2y/7*100,WEIGHTS['financial']['m2'],m2p,'M2 YoY','CBC'),
+      component('credit','金融機構放款與投資',cy,None if cy is None else cy/8*100,WEIGHTS['financial']['credit'],cp,'放款與投資 YoY',csrc or 'CBC'),
+      component('loan_rate','新承做放款利率',rdelta,None if rdelta is None else -rdelta/.75*100,WEIGHTS['financial']['loan_rate'],rp,'相較一年前利率下降為正向','CBC'),
       component('stocks','股價環境',s6,None if s6 is None else s6/15*100,WEIGHTS['financial']['stocks'],sp,'股價指數 6M 變化作風險偏好 proxy','NDC'),
     ]
     agg=aggregate(parts)
