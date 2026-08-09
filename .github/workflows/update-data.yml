@@ -34,6 +34,19 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Inspect CBC CSV structure
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'scripts')
+          from common import decode_text, request_bytes
+          from source_decision import CBC_FIN_URL
+          body, _ = request_bytes(CBC_FIN_URL, 45, 2)
+          print('CBC_CSV_PREVIEW_BEGIN')
+          print(decode_text(body)[:5000])
+          print('CBC_CSV_PREVIEW_END')
+          PY
+
       - name: Fetch official sources and rebuild web data
         run: python scripts/update_data.py
 
