@@ -102,7 +102,7 @@ def domestic_score(period,ndc,inputs):
     net=ndc.get('employee_net_entry_rate',{}); nv,np=latest_before(net,period,2)
     ot=ndc.get('overtime_hours',{}); ov,op=latest_before(ot,period,2); ot_y=yoy(ot,op) if op else None
     broad=ndc.get('wholesale_retail_food',{}); bv,bp=latest_before(broad,period,2); broad_y=yoy(broad,bp) if bp else None
-    if retail_y is None:retail_y=broad_y; retail= broad; period_r=bp; retail_note='批零餐飲總體 YoY fallback'
+    if retail_y is None:retail_y=broad_y; period_r=bp; retail_note='批零餐飲總體 YoY fallback'
     else:period_r=period; retail_note='零售營業額 YoY'
     parts=[
       component('retail','零售消費',retail_y,None if retail_y is None else retail_y/10*100,WEIGHTS['domestic']['retail'],period_r,retail_note,'MOEA/NDC'),
@@ -141,13 +141,14 @@ def generate():
     ndc=ndcobj.get('series',{}); prod=(industry.get('datasets',{}).get('moea.industry.production',{}).get('series',{}).get('C',{})); sales=(industry.get('datasets',{}).get('moea.manufacturing.sales_index_current',{}).get('series',{}).get('C',{}))
     current_period=latest_period(prod) or ndcobj.get('latest_period')
     current={'growth_persistence':growth_score(current_period,prod,sales,ndc,inputs),'domestic_demand':domestic_score(current_period,ndc,inputs),'financial_conditions':financial_score(current_period,ndc,inputs)}
-    allseries=[prod,sales,*ndc.values(),*inputs.get('series',{}).values()]; periods=history_periods(allseries,120)
+    allseries=[prod,sales,*ndc.values(),*inputs.get('series',{}).values()]
+    periods=[p for p in history_periods(allseries,120) if not current_period or p<=current_period]
     history={'growth_persistence':[],'domestic_demand':[],'financial_conditions':[]}
     for p in periods:
         for k,fn in [('growth_persistence',lambda:growth_score(p,prod,sales,ndc,inputs)),('domestic_demand',lambda:domestic_score(p,ndc,inputs)),('financial_conditions',lambda:financial_score(p,ndc,inputs))]:
             r=fn()
             if r:history[k].append({x:r[x] for x in ('period','score','label','confidence')})
-    obj={'version':1,'generated_at':dt.datetime.now(TZ).replace(microsecond=0).isoformat(),'current':current,'history':history,'methodology':{'scale':'-100..+100','missing':'缺值重新正規化權重，Confidence 依可用權重下降','growth':WEIGHTS['growth'],'domestic':WEIGHTS['domestic'],'financial':WEIGHTS['financial']},'sources':inputs.get('catalogs',{})}
+    obj={'version':1,'generated_at':dt.datetime.now(TZ).replace(microsecond=0).isoformat(),'current':current,'history':history,'methodology':{'scale':'-100..+100','common_as_of':current_period,'missing':'缺值重新正規化權重，Confidence 依可用權重下降','growth':WEIGHTS['growth'],'domestic':WEIGHTS['domestic'],'financial':WEIGHTS['financial']},'sources':inputs.get('catalogs',{})}
     save_json('decision_scores.json',obj)
     summary['decision_scores']={k:v for k,v in current.items() if v}
     if current.get('growth_persistence'):
