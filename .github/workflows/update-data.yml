@@ -34,27 +34,20 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Inspect CBC CSV structure
-        run: |
-          python - <<'PY'
-          import sys
-          sys.path.insert(0, 'scripts')
-          from common import decode_text, request_bytes
-          urls=[
-            'https://www.cbc.gov.tw/public/data/EBOOKXLS/001_EF01_A4L.csv',
-            'https://www.cbc.gov.tw/public/data/EBOOKXLS/003_EF03_A4L.csv',
-            'https://www.cbc.gov.tw/public/data/EBOOKXLS/005_EF05_A4L.csv',
-            'https://www.cbc.gov.tw/public/data/EBOOKXLS/007_EF07_A4L.csv',
-          ]
-          for u in urls:
-            body,_=request_bytes(u,45,2)
-            print('CBC_CSV_PREVIEW_BEGIN',u)
-            print(decode_text(body)[:3500])
-            print('CBC_CSV_PREVIEW_END')
-          PY
-
       - name: Fetch official sources and rebuild web data
         run: python scripts/update_data.py
+
+      - name: Inspect decision input alignment
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('data/decision_inputs.json'))
+          for k,s in x.get('series',{}).items():
+            if k.startswith('cbc.'):
+              print(k, 'points=',len(s.get('data',[])), 'latest=', s.get('data',[])[-3:] if s.get('data') else None)
+          y=json.load(open('data/decision_scores.json'))
+          print('financial=', y.get('current',{}).get('financial_conditions'))
+          PY
 
       - name: Validate rebuilt data
         run: |
