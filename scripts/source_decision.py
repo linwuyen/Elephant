@@ -70,27 +70,31 @@ def parse_labor(body):
     units={'unemployment_rate':'percent','avg_monthly_salary':'ntd','manufacturing_monthly_salary':'ntd','avg_monthly_hours':'hours','cpi_yoy':'percent'}
     return {k:{'name':names[k],'unit':units[k],'data':dedup(v)} for k,v in out.items() if v}
 
-def cbc_month_rows(body, columns):
-    """Parse CBC Financial Statistics Monthly Report tables.
+_MONTHS={'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
+def cbc_row_period(row, roc_year):
+    first=str(row[0] or '').strip()
+    # CBC sometimes appends footnote/revision marks to the new-year first row.
+    both=re.search(r'(?<!\d)(\d{3})\D{1,8}(\d{1,2})(?!\d)',first)
+    if both:
+        ry,mo=int(both.group(1)),int(both.group(2))
+        if 100<=ry<200 and 1<=mo<=12:return f'{ry+1911:04d}-{mo:02d}',ry
+    one=re.fullmatch(r'(\d{1,2})',first)
+    if one and roc_year is not None:
+        mo=int(one.group(1))
+        if 1<=mo<=12:return f'{roc_year+1911:04d}-{mo:02d}',roc_year
+    # English month column provides an independent year anchor, e.g. Jan. 2026.
+    tail=' '.join(str(x or '') for x in row[-5:]).lower()
+    em=re.search(r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\.?\s*(20\d{2})',tail)
+    if em:
+        mo=_MONTHS[em.group(1)]; gy=int(em.group(2)); return f'{gy:04d}-{mo:02d}',gy-1911
+    return None,roc_year
 
-    CBC lays months down rows: the first month carries ROC year + month (e.g. '115 1'),
-    later rows carry only the month. Fixed column positions are stable within each official
-    table and are safer than guessing multi-row merged headers.
-    """
+def cbc_month_rows(body, columns):
     out={k:[] for k in columns}; roc_year=None
     for row in csv.reader(decode_text(body).splitlines()):
         if not row:continue
-        first=str(row[0] or '').strip()
-        both=re.fullmatch(r'(\d{3})\s+(\d{1,2})',first)
-        one=re.fullmatch(r'(\d{1,2})',first)
-        if both:
-            roc_year=int(both.group(1)); month=int(both.group(2))
-        elif one and roc_year is not None:
-            month=int(one.group(1))
-        else:
-            continue
-        if not (1<=month<=12):continue
-        period=f'{roc_year+1911:04d}-{month:02d}'
+        period,roc_year=cbc_row_period(row,roc_year)
+        if not period:continue
         for key,idx in columns.items():
             if idx>=len(row):continue
             v=num(row[idx])
@@ -110,7 +114,6 @@ def parse_cbc_financial(bodies):
     out={k:{'name':names[k],'unit':units[k],'data':v} for k,v in raw.items()}
     for required in ('m1b_yoy','m2_yoy','credit_yoy','interbank_rate'):
         if required not in out:raise ValueError('CBC monthly table missing '+required)
-    # Plausibility guards catch column shifts early.
     for key in ('m1b_yoy','m2_yoy','credit_yoy'):
         if not all(-30<float(v)<50 for _,v in out[key]['data'][-24:]):raise ValueError('CBC implausible '+key)
     if not all(0<float(v)<20 for _,v in out['interbank_rate']['data'][-24:]):raise ValueError('CBC implausible interbank_rate')
