@@ -134,3 +134,156 @@ GitHub Pages
 ## 本機不是必要條件
 
 日常使用、抓取、驗證、revision tracking、情報歷史、告警、commit 與 Pages 部署都在 GitHub 雲端完成。使用者只需要打開網頁。
+
+---
+
+## 三個新 Decision Scores：收尾狀態與 Definition of Done
+
+這一階段的目標不是再增加一般圖表，而是補齊三個可以直接支援判斷的 Score：
+
+1. **Growth Persistence Score**：這波成長能不能延續？
+2. **Domestic Demand Score**：內需有沒有真的跟上？
+3. **Financial Conditions Score**：資金與信用環境是在助攻還是壓制景氣？
+
+三個 Score 都必須遵守同一套原則：
+
+- Score 範圍固定為 **-100～+100**。
+- 每個 component 都能看到 raw value、period、weight、transform 與官方來源。
+- 缺值不得當成 0；只能重新正規化可用權重，並同步降低 Confidence。
+- current score 與 historical reconstruction 必須使用同一套公式。
+- 不同官方發布月份要做 period alignment，不得把尚未公布的資料假裝成當月資料。
+- 若資料來源失敗、欄位漂移或 freshness 不足，validator 必須阻止壞資料覆蓋 last-good data。
+
+### 1. Growth Persistence Score
+
+目前已能計算，最近一次開發驗證約為 **+88.33**，但 Confidence 約 **65%**；代表方向可用，但資料面還沒有吃滿。
+
+**目前已有：**
+
+- 外銷訂單／需求訊號
+- 製造業生產
+- 製造業銷售
+- 主要景氣／領先訊號
+
+**還要補完：**
+
+- [ ] 接入穩定、可自動更新的**官方詳細出口月資料**，至少能取得總出口 YoY，後續最好可拆主要商品／市場。
+- [ ] 接入**庫存／存貨訊號**，用來辨識「生產跑得比終端需求快」造成的庫存累積風險。
+- [ ] 將 export 與 inventory component 納入固定權重公式。
+- [ ] 重建完整 Growth Persistence 歷史序列。
+- [ ] current period 與歷史最新 period 必須對齊最新共同可判讀月份。
+- [ ] Confidence 目標至少 **85%**；低於門檻時首頁要顯示 degraded / incomplete，而不是假裝完整。
+
+目標分析鏈：
+
+```text
+外銷訂單 → 出口 → 生產 → 銷售 → 庫存
+```
+
+Elephant 最終應能回答：**訂單是否正在轉成出口與生產？生產是否有銷售支撐？庫存是否開始堆積？因此目前成長是否具有延續性？**
+
+### 2. Domestic Demand Score
+
+目前已能計算，最近一次開發驗證約為 **+45.55**，但 Confidence 約 **55%**；目前仍屬「方向性版本」，尚未達正式完成標準。
+
+**目前已有：**
+
+- 批發／零售／餐飲等內需活動資料
+- 部分勞動市場訊號
+
+**還要補完：**
+
+- [ ] 接入**實質經常性薪資／實質薪資**，不要只使用名目薪資。
+- [ ] 接入**製造業加班工時**或其他可代表企業勞動需求強弱的工時資料。
+- [ ] 接入**就業人數／失業率／就業增減**，區分「薪資成長」與「就業量成長」。
+- [ ] 視官方資料穩定度加入零售／餐飲的實質或 YoY component。
+- [ ] 將薪資、就業、工時、消費 component 納入固定權重公式。
+- [ ] 重建完整 Domestic Demand 歷史序列。
+- [ ] Confidence 目標至少 **85%**。
+
+目標分析鏈：
+
+```text
+就業 → 工時／加班 → 實質薪資 → 零售／餐飲 → 內需強度
+```
+
+Elephant 最終應能回答：**GDP 與出口很強時，一般家庭收入與就業是否同步改善？消費是否真的跟上？目前是外需型繁榮還是廣泛型繁榮？**
+
+### 3. Financial Conditions Score
+
+Financial Conditions 已完成核心資料源改造，改用中央銀行正式「金融統計月報／重要金融指標 CSV」，不再依賴 NDC 是否剛好包含金融欄位。
+
+最近一次開發驗證約為 **+85.00，Confidence 100%**。
+
+**目前五個元件：**
+
+- [x] M1B 年增率
+- [x] M2 年增率
+- [x] 金融機構放款與投資年增率
+- [x] 金融業隔夜拆款利率／短期資金價格
+- [x] 股價指數／風險資產環境
+
+**仍需最後收尾：**
+
+- [ ] 移除為診斷央行 CSV 格式而加入的暫時 debug 輸出／workflow step。
+- [ ] 確認央行 ROC 年月、英文年份與新年度首月解析都有 regression test，避免跨年再次錯掛 period。
+- [ ] 確認五元件 historical reconstruction 完整、current 與 history 最新月份一致。
+- [ ] 確認 Confidence 100% 時五元件都真的有有效值，不只是 weight 被錯誤視為可用。
+
+目標分析鏈：
+
+```text
+流動性 M1B/M2 → 銀行信用 → 短期利率 → 風險資產
+```
+
+Elephant 最終應能回答：**目前金融條件是在支持實體景氣，還是開始收緊並可能拖累下一階段成長？**
+
+## 最終首頁產品形態
+
+首頁最終不應只顯示一個 Cycle Score，而是四層判讀：
+
+```text
+Elephant Cycle Score
+現在景氣強不強？
+        ↓
+Growth Persistence Score
+這波成長能不能延續？
+        ↓
+Domestic Demand Score
+內需與一般家庭有沒有跟上？
+        ↓
+Financial Conditions Score
+資金與信用環境支不支持？
+```
+
+每張卡至少顯示：
+
+- Score（-100～+100）
+- Regime / label
+- Momentum
+- Confidence
+- Effective period
+- 最重要的 2～3 個 component
+- 與前月／上次造訪的變化
+- 展開後完整 evidence chain
+- 歷史圖與 CSV download
+
+## 這一階段什麼時候才算完成
+
+只有同時符合以下條件才算封版：
+
+- [ ] Growth Persistence、Domestic Demand、Financial Conditions 三個 Score 都能由 GitHub runner 從**官方來源**自動重建。
+- [ ] 三個 Score current value 均存在，且 effective period 不超前於 component 真實發布月份。
+- [ ] Growth Confidence ≥ 85%。
+- [ ] Domestic Demand Confidence ≥ 85%。
+- [ ] Financial Conditions Confidence = 100%，或有明確且合理的官方缺值說明。
+- [ ] 三個 Score 均有至少 24 個月 historical reconstruction。
+- [ ] current score 與 history 最新 period/value 一致。
+- [ ] validator 同時檢查 schema、值域、period alignment、freshness、component availability 與 Confidence。
+- [ ] 官方來源失效時保留 last-good data 並自動開 GitHub Issue；恢復後自動關閉。
+- [ ] 所有暫時 debug step / print 移除。
+- [ ] Pages 首頁能直接看到四層判讀，並能 drill down 到 component、歷史與官方來源。
+- [ ] Pages workflow 在正式資料更新後成功重新部署。
+- [ ] 最終 GitHub-hosted runner 至少完整成功跑過一次，且沒有開啟中的自動更新 failure issue。
+
+在以上條件完成前，不因「Score 已經能算」就把這一階段標成完成。
