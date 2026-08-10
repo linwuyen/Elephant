@@ -1,10 +1,21 @@
 # Decision Scores
 
-Elephant 在 Cycle Score 之外新增三個可追溯、可歷史比較的決策分數。
+Elephant 的首頁核心不是單一總分，而是四層診斷：
+
+1. **Cycle Score**：現在景氣強不強？
+2. **Growth Persistence Score**：這波景氣還能持續嗎？
+3. **Domestic Demand Score**：台灣一般人的經濟真的有變好嗎？
+4. **Financial Conditions Score**：資金環境是在支持還是壓制景氣？
+
+三個 Decision Score 都是 deterministic、可追溯、可歷史重建的 -100～+100 規則式分數。缺值不當成 0，只對可用元件重新正規化權重，並以 Confidence 顯示資料覆蓋程度。
 
 ## Growth Persistence
 
-回答：目前成長能否延續？
+分析鏈：
+
+`外銷訂單 → 出口 → 生產 → 銷售 → 庫存`
+
+固定權重：
 
 - 外銷訂單 30%
 - 海關出口 20%
@@ -12,27 +23,72 @@ Elephant 在 Cycle Score 之外新增三個可追溯、可歷史比較的決策�
 - 製造業銷售 15%
 - 存貨壓力 15%
 
+用途不是判斷「目前很強」，而是檢查訂單是否真的轉成出口與生產、生產是否有銷售支撐，以及庫存是否開始堆積。
+
 ## Domestic Demand
 
-回答：內需是否跟上外需景氣？
+分析鏈：
 
-- 零售 25%
+`實質薪資 → 就業 → 零售 → 餐飲 → 信用卡消費`
+
+固定權重：
+
+- 實質薪資 25%
+- 就業 20%
+- 零售 20%
 - 餐飲 15%
-- 平均薪資 20%
-- 失業率 15%
-- 受僱員工淨進入率 10%
-- 加班工時 15%
+- 信用卡消費 20%
+
+信用卡資料使用金管會銀行局公開、由聯合信用卡處理中心提供的月資料。它只涵蓋聯卡中心處理的信用卡消費交易，因此在 Elephant 中明確視為 **consumer-spending proxy**，不是所有民間消費或所有支付行為。
+
+為降低通膨把名目消費放大的問題，信用卡 component 優先使用「簽帳金額 YoY - CPI YoY」；實質薪資則使用薪資 YoY - CPI YoY。
 
 ## Financial Conditions
 
-回答：資金與信用條件是否支持景氣？
+分析鏈：
+
+`M1B → M2 → 銀行信用 → 利率 → 匯率`
+
+固定權重：
 
 - M1B 25%
-- M2 25%
+- M2 20%
 - 金融機構放款與投資 25%
-- 新承做放款利率 15%
-- 股價環境 10%
+- 短期利率 15%
+- 匯率 15%
 
-所有分數範圍為 -100 至 +100。缺值時不視為 0，而是以可用元件重新正規化權重並降低 Confidence。歷史重建只計算到最新共同可判讀月份，避免不同官方發布時差造成假最新。
+金融資料直接使用中央銀行金融統計月報。匯率 component 暫以 USD/TWD 12 個月變動作透明 proxy：在台灣出口導向的金融條件框架下，新台幣適度貶值視為較寬鬆；這是 Elephant 的模型假設，不是普遍經濟定律，極端匯率波動仍應另視為風險。
 
-官方新增直接來源：經濟部外銷訂單、經濟部批發零售餐飲、勞動部每月國內主要經濟指標、中央銀行 M2；若個別直接下載端點漂移，Growth/Domestic/Financial 仍可透過 NDC 已驗證序列降級計算並降低 Confidence。
+## Score contract
+
+三個 Score 都必須遵守：
+
+- 範圍固定 -100～+100。
+- component 必須保存 raw value、period、weight、transform note、source。
+- current 與 historical reconstruction 必須使用同一套公式。
+- 不同官方發布時差用 period alignment 處理，不得把尚未公布的資料掛到最新月份。
+- 缺值只能重新正規化可用權重並降低 Confidence，不得補 0。
+- validator 會鎖住固定 component set，避免模型定義在未察覺下漂移。
+- 原始資料下載失敗時保留 last-good；不得讓 HTML、欄位漂移或錯 period 覆蓋健康資料。
+
+## 下一層
+
+完成這三個核心後，Elephant 的下一個兩層診斷是：
+
+### AI Concentration
+
+回答：**台灣現在到底多依賴 AI？**
+
+預計分析鏈：
+
+`電子訂單 × 電子出口 × 電子生產 × 非電子 breadth`
+
+### Housing / Regional Vitality
+
+回答：**哪些城市真的在變強？**
+
+預計分析鏈：
+
+`人口 × 信用卡 × 新設公司 × 房市成交 × 房價 × 用電`
+
+目標不是做更多圖表，而是讓 Elephant 最終成為台灣經濟的多層次診斷系統。
