@@ -37,18 +37,6 @@ jobs:
       - name: Fetch official sources and rebuild web data
         run: python scripts/update_data.py
 
-      - name: Inspect decision input alignment
-        run: |
-          python - <<'PY'
-          import json
-          x=json.load(open('data/decision_inputs.json'))
-          for k,s in x.get('series',{}).items():
-            if k.startswith('cbc.'):
-              print(k, 'points=',len(s.get('data',[])), 'latest=', s.get('data',[])[-3:] if s.get('data') else None)
-          y=json.load(open('data/decision_scores.json'))
-          print('financial=', y.get('current',{}).get('financial_conditions'))
-          PY
-
       - name: Validate rebuilt data
         run: |
           python scripts/validate_data.py
