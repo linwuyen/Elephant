@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import datetime as dt
 import re
 from io import StringIO
 
@@ -13,25 +14,43 @@ TRADE_COMMODITY_URL = (
     '&codlst0=1101111010100011110111100111110110100&utf=1'
 )
 TRADE_COMMODITY_CATALOG = 'https://data.gov.tw/dataset/8380'
+MIN_YEAR = 1990
+MAX_YEAR = dt.datetime.now().year + 1
+PERIOD_HEADER_TOKENS = ('年月', '年/月', '期間', '資料期', '時間', '月別', '年月別')
+
+
+def _valid_period(year, month):
+    try:
+        y, m = int(year), int(month)
+    except (TypeError, ValueError):
+        return None
+    if not (MIN_YEAR <= y <= MAX_YEAR and 1 <= m <= 12):
+        return None
+    return f'{y:04d}-{m:02d}'
 
 
 def parse_period(raw):
+    """Parse only plausible monthly periods; never treat future monetary values as dates."""
     s = str(raw or '').strip()
     if not s:
         return None
+
     m = re.search(r'(?<!\d)(20\d{2})\D{0,4}(0?[1-9]|1[0-2])(?!\d)', s)
     if m:
-        return f'{int(m.group(1)):04d}-{int(m.group(2)):02d}'
+        return _valid_period(m.group(1), m.group(2))
+
+    # ROC year/month, e.g. 115年7月 or 115/07.
     m = re.search(r'(?<!\d)(\d{2,3})\s*年?\D{0,3}(0?[1-9]|1[0-2])\s*月?(?!\d)', s)
     if m and int(m.group(1)) < 1911:
-        return f'{int(m.group(1)) + 1911:04d}-{int(m.group(2)):02d}'
+        return _valid_period(int(m.group(1)) + 1911, m.group(2))
+
+    # Compact formats are accepted only after plausibility bounding.
     digits = re.sub(r'\D', '', s)
-    if len(digits) == 6 and 200001 <= int(digits) <= 209912:
-        return f'{digits[:4]}-{digits[4:]}'
+    if len(digits) == 6:
+        return _valid_period(digits[:4], digits[4:])
     if len(digits) == 5:
         y, mo = int(digits[:3]), int(digits[3:])
-        if 1 <= mo <= 12:
-            return f'{y + 1911:04d}-{mo:02d}'
+        return _valid_period(y + 1911, mo)
     return None
 
 
@@ -42,6 +61,35 @@ def _pick_col(fieldnames, needle, *, total=False):
     else:
         cand = [x for x in names if '按美元計算' in x and needle in x]
     return cand[0] if cand else None
+
+
+def _pick_period_col(fields, rows, metric_cols):
+    """Resolve a period column without scanning arbitrary monetary values.
+
+    Prefer a semantically named field. If the publisher changes the label, score
+    non-metric columns by how consistently they parse as plausible monthly periods.
+    A real period column should parse for most monthly rows; monetary columns should
+    not. This also excludes annual-total/footer rows with blank period cells.
+    """
+    candidates = [f for f in fields if f not in metric_cols]
+    explicit = [f for f in candidates if any(token in str(f) for token in PERIOD_HEADER_TOKENS)]
+    if explicit:
+        return explicit[0]
+
+    scored = []
+    sample = rows[:240]
+    for field in candidates:
+        values = [str(row.get(field) or '').strip() for row in sample]
+        nonempty = [v for v in values if v]
+        if len(nonempty) < 12:
+            continue
+        parsed = [parse_period(v) for v in nonempty]
+        valid = [p for p in parsed if p]
+        ratio = len(valid) / len(nonempty)
+        distinct = len(set(valid))
+        if ratio >= 0.70 and distinct >= 12:
+            scored.append((ratio, distinct, -candidates.index(field), field))
+    return max(scored)[-1] if scored else None
 
 
 def parse_trade_csv(body):
@@ -56,28 +104,23 @@ def parse_trade_csv(body):
 
     reader = csv.DictReader(StringIO('\n'.join(lines[header_i:])))
     fields = reader.fieldnames or []
+    rows = list(reader)
     total_col = _pick_col(fields, '', total=True)
     elec_col = _pick_col(fields, '電子零組件')
     ict_col = _pick_col(fields, '資通與視聽產品')
     if not all((total_col, elec_col, ict_col)):
         raise ValueError(f'MOF commodity export columns changed: {fields[:8]}')
 
+    metric_cols = {total_col, elec_col, ict_col}
+    period_col = _pick_period_col(fields, rows, metric_cols)
+    if not period_col:
+        raise ValueError(f'MOF commodity export period column not found: {fields[:8]}')
+
     total, electronic, ict, ai_core, share = [], [], [], [], []
-    for row in reader:
-        p = None
-        # Prefer explicit period-like fields, then scan values. The official export
-        # format has changed its leading label more than once, so period parsing is
-        # deliberately header-agnostic.
-        for k, v in row.items():
-            if any(token in str(k) for token in ('年月', '年/月', '期間', '資料期', '時間')):
-                p = parse_period(v)
-                if p:
-                    break
-        if not p:
-            for v in row.values():
-                p = parse_period(v)
-                if p:
-                    break
+    for row in rows:
+        # No row-wide fallback: footer/aggregate rows often have no period and their
+        # monetary values can look like YYYYMM. Such rows must be ignored.
+        p = parse_period(row.get(period_col))
         tv, ev, iv = num(row.get(total_col)), num(row.get(elec_col)), num(row.get(ict_col))
         if not p or tv is None or ev is None or iv is None or tv <= 0:
             continue
@@ -100,14 +143,20 @@ def parse_trade_csv(body):
     }
     if len(series['exports_ai_core_share']['data']) < 12:
         raise ValueError('MOF commodity export parse returned too few monthly rows')
+
+    # Contract: all persisted periods must be plausible and the latest row may not
+    # drift into a fabricated future period.
+    for key, s in series.items():
+        for p, _ in s['data']:
+            y, m = map(int, p.split('-'))
+            if not (MIN_YEAR <= y <= MAX_YEAR and 1 <= m <= 12):
+                raise ValueError(f'implausible period in {key}: {p}')
     return series
 
 
 def update(offline=None):
     old = load_json('ai_inputs.json', {'series': {}})
     if offline:
-        # The regression fixture predates this supplemental source. Preserve the
-        # checked-in last-good copy instead of fabricating an offline value.
         if old.get('series'):
             return {'latest_period': old.get('latest_period'), 'rows': 0, 'message': 'AI trade input preserved in offline regression'}
         raise FileNotFoundError('AI trade fixture not present')
