@@ -1,28 +1,27 @@
 name: Deploy GitHub Pages
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '404.html'
+      - '.nojekyll'
+      - '*.css'
+      - '*.js'
+      - 'data/**'
+      - 'scripts/**'
+      - '.github/workflows/pages.yml'
   push:
     branches: [main]
     paths:
       - 'index.html'
       - '404.html'
       - '.nojekyll'
-      - 'styles.css'
-      - 'app.js'
-      - 'summary.css'
-      - 'summary.js'
-      - 'leading.js'
-      - 'history.css'
-      - 'history.js'
-      - 'decision.css'
-      - 'decision.js'
-      - 'research.css'
-      - 'research.js'
+      - '*.css'
+      - '*.js'
       - 'data/**'
-      - 'scripts/validate_data.py'
-      - 'scripts/validate_decision_scores.py'
-      - 'scripts/build_decision_scores.py'
-      - 'scripts/source_decision.py'
+      - 'scripts/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -32,11 +31,43 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static syntax
+        run: |
+          node --check app.js
+          node --check investment.js
+          node --check research.js
+          python -m py_compile scripts/*.py
+      - name: Rebuild decision data when the checked-in schema is stale
+        run: |
+          if ! python scripts/validate_decision_scores.py; then
+            echo 'Checked-in decision data predates the current score contract; refreshing official data before validation.'
+            python scripts/update_data.py
+          fi
+      - name: Refresh Alpha integration in validation workspace
+        run: python scripts/refresh_investment.py
+      - name: Validate published contracts
+        run: |
+          python scripts/validate_data.py
+          python scripts/validate_decision_scores.py
+          python scripts/validate_investment.py
+          python scripts/test_investment_integration.py
+
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: validate
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -48,16 +79,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Rebuild decision data when the checked-in schema is stale
+      - name: Build latest investment layer for Pages artifact
         run: |
-          if ! python scripts/validate_decision_scores.py; then
-            echo 'Checked-in decision data predates the current score contract; refreshing official data before deploy.'
-            python scripts/update_data.py
-          fi
-      - name: Validate published data
-        run: |
-          python scripts/validate_data.py
-          python scripts/validate_decision_scores.py
+          python scripts/refresh_investment.py
+          python scripts/validate_investment.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
