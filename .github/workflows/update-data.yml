@@ -16,9 +16,12 @@ permissions:
   issues: write
   actions: write
 
+# Official refresh and consultant refresh both rebuild derived data such as
+# decision_scores.json and intelligence_layer.json. They must never write main at
+# the same time.
 concurrency:
-  group: official-data-refresh
-  cancel-in-progress: true
+  group: elephant-data-writers
+  cancel-in-progress: false
 
 jobs:
   refresh:
