@@ -22,7 +22,9 @@ FILES = {
     "reports.csv": f"{BASE}/reports.csv",
     "consultant.db": f"{BASE}/consultant.db",
 }
-UA = "ElephantResearchSync/1.0 (+https://github.com/linwuyen/Elephant)"
+UA = "ElephantResearchSync/1.1 (+https://github.com/linwuyen/Elephant)"
+REQUIRED_COMPANIES = ("McKinsey", "BCG", "Deloitte", "PwC")
+MIN_REPORTS_PER_COMPANY = 3
 
 
 def fetch(url: str) -> bytes:
@@ -33,7 +35,7 @@ def fetch(url: str) -> bytes:
         return response.read()
 
 
-def validate_reports(raw: bytes) -> dict:
+def validate_reports(raw: bytes) -> tuple[dict, Counter]:
     payload = json.loads(raw.decode("utf-8"))
     reports = payload.get("reports")
     if not isinstance(reports, list):
@@ -46,7 +48,17 @@ def validate_reports(raw: bytes) -> dict:
     if bad:
         raise RuntimeError(f"reports.json rows missing required fields: {bad[:5]}")
 
-    return payload
+    companies = Counter(str(r.get("company", "")) for r in reports)
+    incomplete = {c: companies.get(c, 0) for c in REQUIRED_COMPANIES if companies.get(c, 0) < MIN_REPORTS_PER_COMPANY}
+    if incomplete:
+        raise RuntimeError(f"refusing incomplete four-firm research snapshot: {incomplete}")
+
+    undated = sum(1 for r in reports if not r.get("date"))
+    duplicate_urls = len(reports) - len({str(r.get("url", "")) for r in reports})
+    if undated or duplicate_urls:
+        raise RuntimeError(f"research snapshot quality gate failed: undated={undated}, duplicate_urls={duplicate_urls}")
+
+    return payload, companies
 
 
 def main() -> int:
@@ -58,17 +70,17 @@ def main() -> int:
 
     try:
         blobs = {name: fetch(url) for name, url in FILES.items()}
-        payload = validate_reports(blobs["reports.json"])
+        payload, companies = validate_reports(blobs["reports.json"])
         reports = payload["reports"]
 
-        # SQLite magic header: b"SQLite format 3\x00"
+        # SQLite magic header: b"SQLite format 3\x00". A deeper integrity/schema
+        # check is performed by the workflow before this staged snapshot is committed.
         if not blobs["consultant.db"].startswith(b"SQLite format 3\x00"):
             raise RuntimeError("consultant.db is not a valid SQLite file")
 
         for name, content in blobs.items():
             (staged / name).write_bytes(content)
 
-        companies = Counter(str(r.get("company", "")) for r in reports)
         topics = Counter(topic for r in reports for topic in (r.get("topics") or []))
         latest = max((r.get("date") or "" for r in reports), default="")
         source_updated_at = payload.get("updated_at")
@@ -76,12 +88,14 @@ def main() -> int:
 
         status = {
             "status": "ok",
+            "coverage_complete": True,
             "synced_at": now,
             "source_repo": "linwuyen/Consultant_System",
             "source_updated_at": source_updated_at,
             "reports": len(reports),
             "latest_date": latest or None,
-            "companies": dict(sorted(companies.items())),
+            "companies": {c: companies.get(c, 0) for c in REQUIRED_COMPANIES},
+            "minimum_reports_per_company": MIN_REPORTS_PER_COMPANY,
             "topics": dict(sorted(topics.items(), key=lambda x: (-x[1], x[0]))),
             "contract": "research-context-only",
             "score_influence": False,
