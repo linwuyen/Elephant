@@ -7,6 +7,25 @@ const cls=v=>v==null?'alpha-neutral':Number(v)>0?'alpha-positive':Number(v)<0?'a
 const actionClass=v=>String(v||'').toLowerCase().replaceAll(' ','-');
 const contextName={BROADLY_SUPPORTIVE:'廣泛支持',EXPORT_LED_SUPPORTIVE:'出口／科技支持',CONSTRUCTIVE:'偏正向',MIXED:'混合',DEFENSIVE:'防禦',UNKNOWN:'資料不足'};
 
+function ensureShell(){
+ if(!q('link[href="investment.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='investment.css';document.head.appendChild(link)}
+ const tabs=q('.tabs');
+ if(tabs&&!q('[data-tab="investment"]')){const b=document.createElement('button');b.dataset.tab='investment';b.textContent='投資／Alpha';const health=q('[data-tab="health"]');tabs.insertBefore(b,health||null)}
+ if(!q('#investment')){
+  const section=document.createElement('section');section.id='investment';section.className='tab';section.innerHTML=`
+    <div class="investment-hero">
+      <article class="panel"><div class="panel-head"><div><span class="kicker">MACRO × ALPHA</span><h2>Investment Context</h2><p class="sub">Elephant 只提供總經背景；Alpha Score / Buy Gate 仍完全由個股引擎決定。</p></div><span id="investmentStatus" class="investment-status">—</span></div><h3 id="investmentContextLabel">—</h3><p id="investmentContextText" class="sub">載入投資決策層…</p><div id="investmentMetrics" class="investment-context"></div></article>
+      <article class="panel"><div class="panel-head"><div><span class="kicker">BENCHMARK</span><h2>TSMC Opportunity Cost</h2></div></div><div id="investmentBenchmark">—</div><div class="investment-rule"><strong>核心規則</strong><p>TSMC 3000 只觸發重新評估。候選股必須在預期報酬、估值、安全邊際、證據與 freshness 上真正勝過 benchmark，才可能升級。</p></div></article>
+    </div>
+    <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">ALPHA ENGINE</span><h2>已研究個股與 Buy Gate</h2><p id="investmentSelectionText" class="sub">載入 Alpha research…</p></div><div class="alpha-upstream"><span id="investmentFreshness" class="alpha-sub"></span><a class="secondary" href="https://github.com/linwuyen/stock" target="_blank" rel="noopener">Upstream Engine</a></div></div><div class="table-wrap"><table class="alpha-table"><thead><tr><th>#</th><th>個股</th><th>Alpha</th><th>Confidence</th><th>Action</th><th>參考價</th><th>預期報酬</th><th>vs TSMC</th><th>MOS / Next</th></tr></thead><tbody id="alphaRankingRows"></tbody></table></div></article>
+    <article class="panel"><div class="panel-head"><div><span class="kicker">FULL MARKET SCREEN</span><h2>全市場 Top 10 Discovery</h2><p class="sub">Screen 只能產生研究候選，永遠不能直接產生 BUY。</p></div></div><div class="table-wrap"><table><thead><tr><th>#</th><th>公司</th><th>市場</th><th>價格</th><th>營收 YoY</th><th>TTM PE</th><th>Priority</th><th>研究狀態</th></tr></thead><tbody id="alphaScreenRows"></tbody></table></div></article>
+    <article class="panel"><div class="panel-head"><div><span class="kicker">DEEP RESEARCH</span><h2>下一輪研究佇列</h2></div></div><div id="deepResearchGrid" class="deep-grid"></div></article>
+    <article class="panel"><div class="panel-head"><div><span class="kicker">CLOSED LOOP</span><h2>Alpha Calibration</h2></div></div><div id="alphaCalibration">—</div></article>
+    <article class="notice"><strong>架構邊界</strong><p>Macro context ≠ Alpha。Elephant 不會因景氣強就替任何股票加 Alpha 分，也不會因景氣弱就自動取消 upstream BUY。這一層只把「總經 regime」與「個股 mispricing」放在同一個決策畫面中。</p></article>`;
+  const health=q('#health');(health?.parentNode||q('main')).insertBefore(section,health||null)
+ }
+}
+
 function metric(label,x){return `<div class="investment-metric"><div class="label">${esc(label)}</div><div class="value">${x?.score==null?'—':Number(x.score).toFixed(0)}</div><div class="period">${esc(x?.label||'—')} · ${esc(x?.period||'—')}</div></div>`}
 
 function render(data){
@@ -37,6 +56,7 @@ function render(data){
 }
 
 async function init(){
+ ensureShell();
  try{
   const r=await fetch(`data/investment.json?x=${Date.now()}`,{cache:'no-store'});
   if(!r.ok)throw new Error(`HTTP ${r.status}`);
