@@ -1,186 +1,253 @@
 # Elephant — 台灣經濟情報系統
 
 [![Official data refresh](https://github.com/linwuyen/Elephant/actions/workflows/update-data.yml/badge.svg)](https://github.com/linwuyen/Elephant/actions/workflows/update-data.yml)
+[![Consultant research refresh](https://github.com/linwuyen/Elephant/actions/workflows/update-research.yml/badge.svg)](https://github.com/linwuyen/Elephant/actions/workflows/update-research.yml)
 [![GitHub Pages](https://github.com/linwuyen/Elephant/actions/workflows/pages.yml/badge.svg)](https://github.com/linwuyen/Elephant/actions/workflows/pages.yml)
 
-Elephant 是一個免伺服器、免本機常駐的台灣經濟情報系統。它每天自動抓官方資料、驗證、偵測歷史修正、計算景氣動能／轉折／背離／廣度與多層診斷 Score，再把 30 秒摘要發布到 GitHub Pages。
+Elephant 是一個免伺服器、免本機常駐的台灣經濟情報系統：官方資料負責 **Facts / Signals / Scores**，`Consultant_System` 提供 McKinsey / BCG / Deloitte / PwC 的外部研究 context，兩者在 Intelligence Layer 合流，但顧問研究永遠不直接改分數。
 
 網站：`https://linwuyen.github.io/Elephant/`
 
-## 打開首頁會直接看到
+## 首頁：五層診斷
 
-首頁核心是四層診斷：
+1. **Elephant Cycle Score**：現在景氣強不強？
+2. **Growth Persistence Score**：這波景氣還能持續嗎？
+3. **Domestic Demand Score**：內需與一般家庭有沒有跟上？
+4. **Financial Conditions Score**：資金環境是否支持景氣？
+5. **AI Concentration Score**：台灣成長有多集中在 AI／電子鏈？
 
-- **Elephant Cycle Score**：現在景氣強不強？
-- **Growth Persistence Score**：這波景氣還能持續嗎？
-- **Domestic Demand Score**：內需與一般家庭有沒有跟上？
-- **Financial Conditions Score**：資金環境是否支持景氣？
+前四類景氣方向 score 使用 `-100～+100`；AI Concentration 使用 `0～100` 的**集中度**刻度，數字越高代表成長越集中，**不代表景氣更好**。
 
-同時保留：Momentum、Breadth、Leading、Official signal、Confidence、Turning points、Divergences、What matters now、Next watch、Revision log 與 Since your last visit。
+所有 score 均由 deterministic engine 依已驗證官方資料與固定 transform 計算。缺值不補 0，只對可用元件重新正規化並降低 Confidence。
 
-所有數字與分類均由 deterministic engine 從已驗證資料產生；生成式 AI 不決定任何事實或分數。
+## AI Concentration
 
-## Cycle Score：同一套月度公式
-
-為了讓今天的分數可以和歷史真正比較，Cycle Score 只使用月度／高頻成分，不再把一年一次的 GDP 混入月度計分。GDP 仍保留為總體背景資訊。
-
-| 元件 | 權重 |
-| --- | ---: |
-| 製造業生產 YoY | 30% |
-| 產業正成長 Breadth | 20% |
-| 國發會領先指標近 3M | 20% |
-| 製造業銷售 YoY | 15% |
-| PMI | 10% |
-| 國發會景氣綜合分數 | 5% |
-
-缺值時只對可用元件重新正規化權重。Elephant Cycle Score 是自訂透明分數，**不是**國發會官方景氣燈號。
-
-## 情報歷史
-
-網站「情報歷史」頁直接提供：
-
-- Cycle Score / Momentum 歷史時間軸
-- Regime changes
-- 每次核心資料版本真的改變時留下的情報快照
-- 官方歷史值 revision table
-- Cycle Score CSV 下載
-
-`data/intelligence_history.json` 同時保存兩種概念：
-
-1. **Historical reconstruction**：用目前官方已修訂序列，以同一套月度公式回算歷史分數，適合比較景氣位置與轉折。
-2. **Versioned snapshots**：資料 fingerprint 真正改變才新增一筆，保留當時 Elephant 看見的摘要與主要指標。
-
-歷史重建不是 real-time vintage backtest；真正的版本差異由 snapshots + `data/revisions.json` + Git history 留存。
-
-## 自動更新
-
-- 每天 **18:17（Asia/Taipei）** 自動檢查。
-- 修改資料管線也會立即觸發更新。
-- Workflow 使用 concurrency cancellation，避免多個更新互搶 push。
-- 資料 commit 前 fetch + rebase，避免 non-fast-forward。
-- 任一關鍵來源異常時保留上一版，不把壞值覆蓋成健康資料。
-- 驗證成功後 bot commit `data/**`，再明確 dispatch Pages。
-- 關鍵來源失敗時自動建立／更新 GitHub Issue；恢復後自動關閉。
-- 每日 heartbeat 降低 scheduled workflow 因 repository 長期無 activity 被停用的風險。
-
-## 官方資料來源
-
-| 來源 | 狀態 | 主要用途 |
-| --- | --- | --- |
-| 主計總處 | 自動、必要 | GDP、CPI、薪資、就業 |
-| 經濟部統計處 | 自動、必要 | 工業生產、製造業銷售、外銷訂單、零售、餐飲、存貨 |
-| 財政部關務署 | 自動、必要 | 海關出口 |
-| 中央銀行 | 自動、必要 | M1B、M2、銀行信用、短期利率、USD/TWD |
-| 金管會／聯合信用卡處理中心 | 自動、Decision Score | 信用卡消費 proxy |
-| 內政部戶政司 | 自動、必要 | 人口、出生死亡、年齡結構、縣市、高齡化 |
-| 國家發展委員會 | 自動、必要 | 領先／同時／落後指標、景氣燈號、PMI/NMI 等景氣構成項目 |
-| 經濟部 legacy 下載 | Best effort | 舊銷售價值／投資等歷史補充；失效時保留 last-good |
-| SEGIS | Blocked | 沒有穩定可驗證官方輸入前不偽造數值 |
-
-## Intelligence pipeline
+回答：**台灣現在的成長是不是過度依賴 AI／電子鏈？**
 
 ```text
-DGBAS / MOEA / Customs / CBC / NCCC / RIS / NDC
-          ↓
-官方資料抓取
-          ↓
-revision_tracker.capture()
-          ↓
-格式、值域、period、freshness 驗證
-          ↓
-data/*.json
-          ↓
-revision diff：old → new
-          ↓
-build_summary.py + build_decision_scores.py
-          ↓
-Cycle / Growth Persistence / Domestic Demand / Financial Conditions
-          ↓
-build_history.py
-          ↓
-月度歷史重建 + 版本快照
-          ↓
-validate_data.py + validate_decision_scores.py
-          ↓
-GitHub Pages
+電子相關外銷訂單         30%
+AI 核心出口             30%
+資訊電子生產領先幅度     25%
+非電子產業 breadth       15%
 ```
 
-## 資料完整性
-
-發布前至少檢查：
-
-- JSON 可解析、必要序列存在。
-- period 不重複、排序正常。
-- GDP／人口／產業指數合理值域。
-- 最新縣市至少 20 個行政區。
-- DGBAS / RIS 年資料至少到前一曆年。
-- MOEA / NDC 核心月資料不得落後超過 4 個月。
-- Cycle Score、Momentum、Confidence、Turning Point、Divergence 通過 schema/value validation。
-- Decision Score 的 component set、權重、值域、current/history alignment 通過固定 contract validation。
-- Historical Cycle Score 至少 24 個月，且 current score 與歷史重建最新期間對齊。
-- Revision record schema 驗證。
-- 單一來源失敗時保留 last-good data，不把 HTML、DNS 錯誤或欄位漂移當正式數據。
-
-## 生成式 AI 的角色
-
-目前**不使用生成式 AI 決定數字、趨勢或分數**。未來即使接 LLM，也只應放在已計算完成的 Facts / Signals / Scores 之上做自然語言解釋：
+其中 AI 核心出口使用財政部主要貨品出口資料中的：
 
 ```text
-官方資料 → 規則式 Facts / Signals / Scores → LLM 解釋
+電子零組件 + 資通與視聽產品
+-----------------------------
+          總出口
 ```
 
-## 本機不是必要條件
+如果官方輸入當期沒有乾淨、可驗證的電子分類外銷訂單序列，就**不推估、不補假值**；該 component 缺值並反映在 Confidence。
 
-日常使用、抓取、驗證、revision tracking、情報歷史、告警、commit 與 Pages 部署都在 GitHub 雲端完成。使用者只需要打開網頁。
+## Intelligence Layer v1
 
----
+Elephant 不再只是 dashboard。`data/intelligence_layer.json` 會把 deterministic scores 與顧問研究組成可追溯的 decision context：
 
-## 三個 Decision Scores
+```text
+                    Taiwan official data
+                           ↓
+                deterministic Scores
+                           ↓
+       Official Evidence / What Changed
+                           ↓
+              Intelligence Layer v1
+              ↙          ↓          ↘
+     Research Evidence  Risks  Contradictions
+              ↑
+McKinsey / BCG / Deloitte / PwC
+              ↑
+       Consultant_System
+```
 
-三個 Score 都固定為 **-100～+100**，每個 component 保存 raw value、period、weight、transform note 與 source。缺值不補 0，只重新正規化可用權重並降低 Confidence。
+每個維度都產生：
 
-### 1. Growth Persistence Score
+- Official Evidence
+- Research Evidence
+- Contradictions
+- Risks
+- What Changed
+- Dimension Brief
+- Cross-dimension Executive Brief
 
-回答：**這波景氣還能持續嗎？**
+研究 mapping 使用可重現的 topic / keyword / recency metadata rules。它是**全球策略 context**，不是台灣因果證據。
+
+最重要的 contract：
+
+```json
+{
+  "contract": "official-deterministic-scores-plus-consultant-context",
+  "score_influence": false
+}
+```
+
+## Consultant_System integration
+
+上游：`linwuyen/Consultant_System`
+
+它每天先建立並驗證：
+
+```text
+reports.json
+reports.csv
+consultant.db
+```
+
+Elephant 再同步進：
+
+```text
+data/consultant/reports.json
+data/consultant/reports.csv
+data/consultant/consultant.db
+data/consultant/status.json
+```
+
+同步不是盲目 copy。Elephant 會再次 gate：
+
+- McKinsey ≥ 3
+- BCG ≥ 3
+- Deloitte ≥ 3
+- PwC ≥ 3
+- undated = 0
+- duplicate URL = 0
+- SQLite magic / integrity / schema contract 正常
+
+任何一項失敗都不會把不完整研究 snapshot 當 production data。
+
+網站「**顧問研究**」頁籤提供關鍵字、公司、Topic、年份篩選、官方原文連結、CSV / SQLite 下載及 browser-side SQLite SQL Console。
+
+## Automatic schedules
+
+```text
+09:17 Asia/Taipei  Consultant_System refresh
+10:17 Asia/Taipei  Elephant consultant sync + Intelligence rebuild
+18:17 Asia/Taipei  Elephant official-data refresh + all deterministic rebuilds
+```
+
+每次資料 commit 後都會明確觸發 GitHub Pages。Workflow 使用 concurrency、validation、fetch/rebase/push 與 last-good 策略，避免 race condition 或來源暫時失效污染正式資料。
+
+## Official data sources
+
+| 來源 | 主要用途 |
+| --- | --- |
+| 主計總處 | GDP、CPI、薪資、就業 |
+| 經濟部統計處 | 工業生產、製造業銷售、外銷訂單、零售、餐飲、存貨 |
+| 財政部 / 關務資料 | 總出口、主要貨品出口、AI 核心出口占比 |
+| 中央銀行 | M1B、M2、銀行信用、短期利率、USD/TWD |
+| 金管會 / 聯合信用卡處理中心 | 信用卡消費 proxy |
+| 內政部戶政司 | 人口、出生死亡、年齡結構、縣市、高齡化 |
+| 國家發展委員會 | 領先／同時／落後指標、景氣燈號、PMI/NMI |
+| SEGIS | 未取得穩定可驗證輸入前保持 blocked，不偽造數值 |
+
+## Core score chains
+
+### Cycle Score
+
+```text
+製造業生產 YoY 30%
+產業正成長 Breadth 20%
+國發會領先指標近 3M 20%
+製造業銷售 YoY 15%
+PMI 10%
+國發會景氣綜合分數 5%
+```
+
+Cycle Score 是 Elephant 自訂透明分數，**不是**國發會官方景氣燈號。
+
+### Growth Persistence
 
 ```text
 外銷訂單 → 出口 → 生產 → 銷售 → 庫存
 ```
 
-固定權重：外銷訂單 30%、出口 20%、製造業生產 20%、製造業銷售 15%、存貨壓力 15%。
+固定原始權重：30% / 20% / 20% / 15% / 15%。
 
-### 2. Domestic Demand Score
-
-回答：**台灣一般人的經濟真的有變好嗎？**
+### Domestic Demand
 
 ```text
 實質薪資 → 就業 → 零售 → 餐飲 → 信用卡消費
 ```
 
-固定權重：實質薪資 25%、就業 20%、零售 20%、餐飲 15%、信用卡消費 20%。信用卡 component 使用聯合信用卡處理中心的處理金額作 proxy；它不是所有支付行為。可取得 CPI 時，以 YoY 減 CPI YoY 做實質化。
+固定原始權重：25% / 20% / 20% / 15% / 20%。信用卡 component 是 proxy，不代表全部支付行為。
 
-### 3. Financial Conditions Score
-
-回答：**資金環境是在支持還是壓制景氣？**
+### Financial Conditions
 
 ```text
 M1B → M2 → 銀行信用 → 利率 → 匯率
 ```
 
-固定權重：M1B 25%、M2 20%、金融機構放款與投資 25%、短期利率 15%、USD/TWD 15%。
+固定原始權重：25% / 20% / 25% / 15% / 15%。匯率 component 採透明的出口型金融條件假設，不視為一般經濟定律。
 
-匯率 component 的透明模型假設：在台灣出口導向的金融條件框架中，USD/TWD 適度上升（新台幣貶值）暫視為較寬鬆；這不是普遍經濟定律，極端匯率波動仍需另視為風險。
+## Intelligence pipeline
 
-完整公式、資料邊界與 contract：[`README_DECISION_SCORES.md`](README_DECISION_SCORES.md)
+```text
+DGBAS / MOEA / MOF / CBC / NCCC / RIS / NDC
+                      ↓
+                official ingestion
+                      ↓
+       validation + revision_tracker
+                      ↓
+                 data/*.json
+                      ↓
+ summary / history / decision scores
+                      ↓
+ Cycle + Growth + Domestic + Financial + AI Concentration
+                      ↓
+             deterministic validation
+                      ↓
+                Intelligence Layer
+                      ↑
+      Consultant_System validated snapshot
+                      ↓
+                  GitHub Pages
+```
+
+## Data integrity contract
+
+正式發布前至少檢查：
+
+- JSON/schema 可解析且必要序列存在
+- period 不重複、排序正常、值域合理
+- freshness contract
+- Cycle / Decision / AI Concentration score range、component、weight、history/current alignment
+- Intelligence Layer `score_influence=false`
+- consultant four-firm coverage + SQLite integrity
+- revision record contract
+- JavaScript/Python syntax
+- Pages artifact validation
+
+單一來源失敗時保留 last-good；不把 HTML、DNS error、欄位漂移或缺值當作 0。
+
+## 情報歷史
+
+「情報歷史」保留 Cycle Score / Momentum、regime changes、版本快照與官方 revision。`data/intelligence_history.json` 同時區分：
+
+- **Historical reconstruction**：以目前官方已修訂序列回算歷史。
+- **Versioned snapshots**：核心資料 fingerprint 真正改變時留下當時視角。
+
+因此 historical reconstruction 不是 real-time vintage backtest；vintage 差異由 snapshots + `data/revisions.json` + Git history 留存。
+
+## 生成式 AI 的角色
+
+目前**不使用生成式 AI 決定數字、分類或 score**。安全邊界是：
+
+```text
+官方資料 → deterministic Facts / Signals / Scores
+                            ↓
+             deterministic Research Mapping
+                            ↓
+          optional LLM natural-language explanation
+```
+
+即使未來加入 LLM，它也只能解釋已計算結果，不能改寫數字或資料 provenance。
+
+## 本機不是必要條件
+
+抓取、驗證、revision tracking、score rebuild、研究同步、Intelligence rebuild、commit、告警與 Pages deployment 都在 GitHub 雲端完成；日常使用只需打開網站。
 
 ## 下一層產品路線
 
-Elephant 最終要回答五個問題：
+五層核心診斷與 Intelligence Layer v1 已落地。下一個主要決策層是：
 
-1. **Growth Persistence**：這波景氣還能持續嗎？
-2. **AI Concentration**：台灣現在到底多依賴 AI？使用 `電子訂單 × 電子出口 × 電子生產 × 非電子 breadth`。
-3. **Domestic Demand**：台灣一般人的經濟真的有變好嗎？
-4. **Financial Conditions**：資金環境是在支持還是壓制景氣？
-5. **Housing / Regional Vitality**：哪些城市真的在變強？預計使用 `人口 × 信用卡 × 新設公司 × 房市成交 × 房價 × 用電`。
-
-目標不是再堆更多總體圖表，而是把 Elephant 做成**台灣經濟的多層次診斷系統**。
+**Housing / Regional Vitality**：哪些城市真的在變強？預計使用 `人口 × 信用卡 × 新設公司 × 房市成交 × 房價 × 用電`，並延續同一套「官方 score 與外部 research context 分離」原則。
