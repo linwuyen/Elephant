@@ -1,0 +1,691 @@
+{
+  "updated_at": "2026-08-14T04:04:54Z",
+  "reports": [
+    {
+      "id": "16775921a5bedece",
+      "company": "BCG",
+      "title": "The Next-Gen Strategist in the Age of AI",
+      "date": "2026-08-13",
+      "url": "https://www.bcg.com/publications/2026/how-strategy-leaders-adapt-to-ai",
+      "description": "As AI commoditizes analytical thinking, strategists must foster new modes of thinking—and select the right one to tackle the challenges faced by their firm.",
+      "topics": [],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "39f0a96642dffeef",
+      "company": "BCG",
+      "title": "What CEOs Should Know About China’s Business Ambitions",
+      "date": "2026-08-13",
+      "url": "https://www.bcg.com/publications/2026/chinas-15th-five-year-plan-ceos",
+      "description": "The 15th Five-Year Plan reveals the country’s economic goals. We highlight those ambitions and the constraints on achieving them.",
+      "topics": [
+        "Economics"
+      ],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "2ebd55010827a52f",
+      "company": "BCG",
+      "title": "Who Will Win as AI Rewrites Competitive Advantage?",
+      "date": "2026-08-13",
+      "url": "https://www.bcg.com/publications/2026/which-companies-capture-value-from-ai",
+      "description": "AI is driving a historic reallocation of capital and a shift in profit pools, forcing leaders to rethink where defensible returns will come from.",
+      "topics": [],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "8170d5288ded54a3",
+      "company": "BCG",
+      "title": "Consumer Spending in Canada Is Shifting, Just Not How You’d Expect",
+      "date": "2026-08-12",
+      "url": "https://www.bcg.com/publications/2026/consumer-spending-in-canada-is-shifting-just-not-how-you-expect",
+      "description": "As household budgets tighten, retail categories are starting to pull apart. The retailers that recognize those shifts first will be best positioned to grow.",
+      "topics": [],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "097f00bd91c61706",
+      "company": "Deloitte",
+      "title": "What’s happening this week in economics?",
+      "date": "2026-08-11",
+      "url": "https://www.deloitte.com/us/en/insights/topics/economy/global-economic-outlook/weekly-update.html",
+      "description": "What’s happening this week in economics? Deloitte’s team of economists examines news and trends from around the world.",
+      "topics": [
+        "Economics"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "a333523ae675b16d",
+      "company": "Deloitte",
+      "title": "European CFOs are more pessimistic in 2026 than at any point since the 2022 energy crisis",
+      "date": "2026-08-06",
+      "url": "https://www.deloitte.com/us/en/insights/topics/business-strategy-growth/european-cfo-survey-spring-2026.html",
+      "description": "CFOs are prioritizing cost discipline, resilience, and scenario planning as geopolitical risk intensifies",
+      "topics": [
+        "Energy",
+        "Supply Chain"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "e2b69ea7f89a4715",
+      "company": "BCG",
+      "title": "AI-First Procurement: How Autonomous Agents Drive Competitive Advantage",
+      "date": "2026-08-03",
+      "url": "https://www.bcg.com/publications/2026/ai-in-procurement-drives-competitive-advantage",
+      "description": "Procurement teams are capturing only a fraction of AI’s potential value. The missing ingredient? Redesigning workflows around AI agents.",
+      "topics": [
+        "AI",
+        "Supply Chain"
+      ],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "8740f5c4c943a91d",
+      "company": "BCG",
+      "title": "The Unexpected Ways GLP-1s Are Transforming Consumer Behavior",
+      "date": "2026-08-03",
+      "url": "https://www.bcg.com/publications/2026/glp-1-consumer-behavior-shift",
+      "description": "GLP-1s are doing more than shrinking appetites. They’re stimulating lasting changes in the way users—and their households—eat, shop, dress, exercise, and spend.",
+      "topics": [],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "9b12bbaa51da92d3",
+      "company": "BCG",
+      "title": "Do You Own Your Enterprise Cortex? The AI Strategy Risk CEOs May Not See Coming.",
+      "date": "2026-08-03",
+      "url": "https://www.bcg.com/publications/2026/how-ceos-avoid-ai-vendor-lock-in-risk",
+      "description": "As AI becomes central to enterprise decision making, CEOs face a new challenge: protecting what makes their business unique.",
+      "topics": [
+        "Strategy"
+      ],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "1b2c6a3f3f843c8c",
+      "company": "BCG",
+      "title": "How CEOs Can Make the Most of Their Time After Leaving the Corner Office",
+      "date": "2026-07-31",
+      "url": "https://www.bcg.com/publications/2026/how-ceos-thrive-after-the-corner-office",
+      "description": "Stepping down from a successful, performance-driven career can be disorienting, but a new survey highlights specific moves that can help CEOs manage the transition.",
+      "topics": [],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "01f5403bbeaf257a",
+      "company": "BCG",
+      "title": "Entrepreneurial Capitalism Will Be Built City by City",
+      "date": "2026-07-31",
+      "url": "https://www.bcg.com/publications/2026/entrepreneurial-ecosystems-city-by-city",
+      "description": "Today’s city leaders face social and economic challenges, but growing their startup ecosystems can deliver citizen benefits on a budget.",
+      "topics": [
+        "Economics"
+      ],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "5928c908d17618ff",
+      "company": "Deloitte",
+      "title": "North American CFOs express concerns about AI governance and risk management",
+      "date": "2026-07-22",
+      "url": "https://www.deloitte.com/us/en/insights/topics/business-strategy-growth/2q-2026-cfo-signals-survey.html",
+      "description": "Respondents to the second-quarter 2026 CFO Signals survey on AI governance are most concerned about cost uncertainty, transparency, and managing risks",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "2529db3a5e73ef1b",
+      "company": "BCG",
+      "title": "The AI-First Asset Manager",
+      "date": "2026-07-21",
+      "url": "https://www.bcg.com/publications/2026/reimagining-asset-management-with-ai",
+      "description": "Autonomous AI agents can help solve some of the industry’s most pressing problems—but only if the CEO, CTO, and CIO align on strategic vision.",
+      "topics": [
+        "AI"
+      ],
+      "source_name": "BCG Publications",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "c3658431b8e0fb11",
+      "company": "Deloitte",
+      "title": "Four futures for technology infrastructure: Which one are you building toward?",
+      "date": "2026-07-14",
+      "url": "https://www.deloitte.com/us/en/insights/topics/technology-management/future-enterprise-architecture.html",
+      "description": "Explore the future of enterprise architecture through four potential infrastructure scenarios, and learn how leaders can build resilience and optionality now",
+      "topics": [
+        "Supply Chain"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "ac5990bf51045549",
+      "company": "Deloitte",
+      "title": "AI adoption to adaptation: How a new change approach can build the human behaviors needed for AI",
+      "date": "2026-07-09",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/ai-adoption-to-ai-adaptation.html",
+      "description": "AI adoption is easy to prove and easy to fake. But these three behaviors show whether workers are actually adapting to AI—changing how they think, decide, and work.",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "e47eb28e4c2dfa7d",
+      "company": "Deloitte",
+      "title": "2026 Deloitte Back-to-School Survey",
+      "date": "2026-07-08",
+      "url": "https://www.deloitte.com/us/en/insights/industry/retail-distribution/back-to-school-survey.html",
+      "description": "Deloitte's 19th Back-to-School Survey finds parents seeking value in their shopping journey amid persistently high inflation and weak consumer sentiment",
+      "topics": [
+        "Economics"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "5848a6a1dbb019d7",
+      "company": "Deloitte",
+      "title": "Rewiring the enterprise operating model for AI scale",
+      "date": "2026-06-28",
+      "url": "https://www.deloitte.com/us/en/insights/topics/technology-management/rewiring-ai-operating-model.html",
+      "description": "Enterprise AI strategy is entering a new phase, requiring operating models built for faster decisions, dynamic funding, and coordinated work",
+      "topics": [
+        "Strategy"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "8f24658dbeb4fc08",
+      "company": "PwC",
+      "title": "The rise of everyday health",
+      "date": "2026-06-23",
+      "url": "https://www.pwc.com/gx/en/issues/c-suite-insights/voice-of-the-consumer-survey.html",
+      "description": "How consumer health habits and occasions are reshaping growth across consumer markets and healthcare.",
+      "topics": [
+        "Strategy"
+      ],
+      "source_name": "PwC C-suite Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "7ef96ec92c83213c",
+      "company": "Deloitte",
+      "title": "The $9 trillion knowledge exodus: How organizations can turn baby boomer retirements into a competitive advantage",
+      "date": "2026-06-18",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/knowledge-management-plan.html",
+      "description": "A so-called ‘silver tsunami’ could drain decades of organizational knowledge. This five-step process can help leaders capture institutional knowledge before it walks out the door.",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "54cb9bb79d916e0f",
+      "company": "Deloitte",
+      "title": "3 actions top executives and board leaders can take to help safeguard data credibility",
+      "date": "2026-05-27",
+      "url": "https://www.deloitte.com/us/en/insights/topics/business-strategy-growth/data-governance.html",
+      "description": "Scenario planning and agile governance are only as strong as the data underpinning them. How can leaders discern if the information they use can be trusted?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "1ed2516bd044da0b",
+      "company": "Deloitte",
+      "title": "FSI Predictions 2026",
+      "date": "2026-05-19",
+      "url": "https://www.deloitte.com/us/en/insights/industry/financial-services/financial-services-industry-predictions.html",
+      "description": "How emerging technologies and market shifts will transform the structure, delivery, and accessibility of financial services in the United States",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "2dd1c8868505cac4",
+      "company": "Deloitte",
+      "title": "Rethinking operating models for humans with agents",
+      "date": "2026-04-02",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/operating-models-for-humans-ai-agents.html",
+      "description": "It’s still early days for AI agents and multi-agent systems, but leaders will soon face questions about how to design work for a changing workforce",
+      "topics": [
+        "AI",
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "c1a5398f75752317",
+      "company": "Deloitte",
+      "title": "2026 Digital Media Trends: Capturing always-on fandom between releases and seasons",
+      "date": "2026-03-24",
+      "url": "https://www.deloitte.com/us/en/insights/industry/technology/digital-media-trends-consumption-habits-survey.html",
+      "description": "To boost retention and monetize fan engagement, owners of strong fandoms could host year-round social content, shopping, and exclusive experiences in their own environments",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "dfb26f948df3f955",
+      "company": "Deloitte",
+      "title": "Have organizational functions outlived their function?",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/modernizing-corporate-functions.html",
+      "description": "The time has come to question the usefulness of traditional organizational pillars",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "949fb4b8836f9fce",
+      "company": "Deloitte",
+      "title": "Getting human and machine relationships right",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/human-ai-interaction-design.html",
+      "description": "To multiply human potential with AI, organizations can deliberately design human and machine interactions",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "ba2440e7f1f075bc",
+      "company": "Deloitte",
+      "title": "Fact or fabrication? AI is blurring the line when it comes to people and work",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/managing-disinformation-at-scale.html",
+      "description": "In the age of generative AI, it’s getting more difficult to know what is true, relevant, or meaningful about people and work. How can we manage disinformation at scale?",
+      "topics": [
+        "AI"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "2d3badc239c8bc1d",
+      "company": "Deloitte",
+      "title": "Dealing with AI’s cultural debt",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/ai-cultural-debt.html",
+      "description": "AI may be creating an unnoticed, steady accumulation of negative cultural behaviors. How do we manage it so culture can be an advantage in the age of AI?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "eb559f4d0cbfa96a",
+      "company": "Deloitte",
+      "title": "The orchestration advantage",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/orchestrating-for-agility.html",
+      "description": "AI can enable quick intent-to-action. But turning speed into competitive advantage will likely come from learning to orchestrate capabilities and capacity in real time.",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "00acadde477c01dc",
+      "company": "Deloitte",
+      "title": "Decisions that echo",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/decisions-that-echo.html",
+      "description": "Amid eroding trust and accelerating technology, board decisions reverberate beyond the organization. The question is whether those decisions will strengthen society—or strain it.",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "df2a13b8384b1ca4",
+      "company": "Deloitte",
+      "title": "2026 Global Human Capital Trends",
+      "date": "2026-03-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends.html",
+      "description": "Our 2026 survey reveals a shift from tensions to tipping points. What intentional choices can organizations make to adapt continuously, move with speed, and lead with a human edge?",
+      "topics": [
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "9e0204dc7a5ffdbf",
+      "company": "Deloitte",
+      "title": "AI and the future of human decision-making",
+      "date": "2026-03-03",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/decision-making-with-ai.html",
+      "description": "As AI transforms decision-making, how can organizations make quality decisions, anchored in human agency and trust?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "87185b35b773a568",
+      "company": "Deloitte",
+      "title": "Staying relevant in a world that won’t sit still",
+      "date": "2026-03-03",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2026/creating-an-adaptable-workforce.html",
+      "description": "Real-time adaptability is emerging as a competitive differentiator. How can organizations build worker resilience on the fly?",
+      "topics": [
+        "Supply Chain"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "3774d328d4ef5679",
+      "company": "PwC",
+      "title": "PwC’s 29th Global CEO Survey: Leading through uncertainty in the age of AI",
+      "date": "2026-01-19",
+      "url": "https://www.pwc.com/gx/en/issues/c-suite-insights/ceo-survey.html",
+      "description": "CEOs are reinventing their companies with technology and seeking growth opportunities in new sectors, even as they see elevated threats ahead.",
+      "topics": [
+        "Strategy"
+      ],
+      "source_name": "PwC C-suite Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "2bfe1f12116916b2",
+      "company": "Deloitte",
+      "title": "A shrinking workforce may thwart US manufacturing ambitions",
+      "date": "2025-12-22",
+      "url": "https://www.deloitte.com/us/en/insights/topics/economy/spotlight/us-manufacturing-labor-impact.html",
+      "description": "The December 2025 Economics Insider explores trends in the US manufacturing workforce and the factors shaping those trends",
+      "topics": [
+        "Manufacturing",
+        "Economics",
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "d6c298cff1d6122b",
+      "company": "Deloitte",
+      "title": "2026 Global Health Care Outlook",
+      "date": "2025-12-11",
+      "url": "https://www.deloitte.com/us/en/insights/industry/health-care/life-sciences-and-health-care-industry-outlooks/2026-global-health-care-outlook.html",
+      "description": "Discover how AI, workforce shifts, and new care models are transforming health care. Find out what changes are ahead for global organizations.",
+      "topics": [
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "872b3208c9832cef",
+      "company": "Deloitte",
+      "title": "Tech Trends 2026",
+      "date": "2025-12-10",
+      "url": "https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends.html",
+      "description": "As technology innovation and adoption accelerate, five trends reveal how successful organizations are moving from experimentation to impact",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "28221fb09f627173",
+      "company": "PwC",
+      "title": "Global Investor Survey 2025",
+      "date": "2025-12-08",
+      "url": "https://www.pwc.com/gx/en/issues/c-suite-insights/global-investor-survey.html",
+      "description": "Resilience, AI adoption, and business model reinvention are shaping investor expectations as disruption and uncertainty loom in the year ahead.",
+      "topics": [
+        "Supply Chain"
+      ],
+      "source_name": "PwC C-suite Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "5ae1e35e3c890cc9",
+      "company": "Deloitte",
+      "title": "A new era of self-reliance: Navigating technology sovereignty",
+      "date": "2025-11-18",
+      "url": "https://www.deloitte.com/us/en/insights/industry/technology/technology-media-and-telecom-predictions/2026/tech-sovereignty.html",
+      "description": "Countries and regional blocs are racing to build their own sovereign tech and AI infrastructures. What are the implications? How can global businesses prepare?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "599e8bfd1357816e",
+      "company": "Deloitte",
+      "title": "TMT Predictions 2026: The AI gap narrows but persists",
+      "date": "2025-11-16",
+      "url": "https://www.deloitte.com/us/en/insights/industry/technology/technology-media-and-telecom-predictions.html",
+      "description": "Deloitte predicts 2026 will see the gap between the promise and reality of AI narrow, as further movements towards getting it to scale are made",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-08T17:09:53Z",
+      "last_seen_at": "2026-08-08T17:09:53Z"
+    },
+    {
+      "id": "74ce71692b5a6571",
+      "company": "Deloitte",
+      "title": "From jobs to skills to outcomes: Rethinking how work gets done",
+      "date": "2025-10-28",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/future-of-workforce-planning/planning-work-outcomes.html",
+      "description": "Workforce planning is moving toward a future where outcomes define the work. How can organizations embrace task and skills-based planning now, while preparing for what comes next?",
+      "topics": [
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "0121f3cf2f038405",
+      "company": "Deloitte",
+      "title": "Forecasting the rise of push payment scams—the fraud consumers are tricked into authorizing",
+      "date": "2025-10-09",
+      "url": "https://www.deloitte.com/us/en/insights/industry/financial-services/authorized-push-payment-fraud.html",
+      "description": "Deloitte estimates US losses from authorized push payment fraud could surge to nearly $15 billion by 2028. Who’s most vulnerable, and how can banks shore up their defenses?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "c18d5cb35c9bdc63",
+      "company": "Deloitte",
+      "title": "In the gen AI economy, consumers want innovation they can trust",
+      "date": "2025-09-24",
+      "url": "https://www.deloitte.com/us/en/insights/industry/telecommunications/connectivity-mobile-trends-survey.html",
+      "description": "By pairing strong data responsibility with bold innovation, tech companies can win greater trust, loyalty, and spending",
+      "topics": [
+        "AI",
+        "Economics"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "abe999dc7078d77d",
+      "company": "Deloitte",
+      "title": "2025 Smart Manufacturing and Operations Survey: Navigating challenges to implementation",
+      "date": "2025-05-01",
+      "url": "https://www.deloitte.com/us/en/insights/industry/manufacturing-industrial-products/2025-smart-manufacturing-survey.html",
+      "description": "Deloitte’s survey of 600 executives shows that as factories and operations get smarter, manufacturers work to overcome obstacles in talent acquisition, manage complex transformations, and mitigate operational risk",
+      "topics": [
+        "Manufacturing",
+        "Strategy",
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "851be29de49b9718",
+      "company": "PwC",
+      "title": "The leader’s guide to value in motion",
+      "date": "2025-04-29",
+      "url": "https://www.pwc.com/gx/en/issues/value-in-motion/leader-guide-value-in-motion.html",
+      "description": "Get ready for AI, climate change and other megatrends to shift value pools, reconfigure industries and redefine the top management agenda.",
+      "topics": [],
+      "source_name": "PwC Today's Issues",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "f9ac4415b76b0f42",
+      "company": "Deloitte",
+      "title": "Has the CISO finally been accepted as a key strategic player?",
+      "date": "2025-02-27",
+      "url": "https://www.deloitte.com/us/en/insights/topics/business-strategy-growth/ciso-and-cybersecurity-strategy.html",
+      "description": "Why was there a surge in CISOs' strategic involvement in business-critical technology conversations last year?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "1ddfc7ea93a3c93b",
+      "company": "Deloitte",
+      "title": "Benfica scores big with AI and spatial data",
+      "date": "2024-10-24",
+      "url": "https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends/2024/artificial-intelligence-in-sports.html",
+      "description": "The Portuguese pro football team is using artificial intelligence and analytics to develop young talent into high-caliber athletes",
+      "topics": [
+        "AI",
+        "Workforce"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "492aab51b12b768f",
+      "company": "Deloitte",
+      "title": "Ownership unbound: Reinventing intellectual property in the open innovation age",
+      "date": "2024-10-08",
+      "url": "https://www.deloitte.com/us/en/insights/topics/innovation/rethinking-intellectual-property-in-age-of-open-innovation.html",
+      "description": "Emerging tech, open innovation, and changing consumer demands are disrupting IP models. How can organizations balance IP protection with collaboration?",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "c362437eb62e5cea",
+      "company": "Deloitte",
+      "title": "How Eastman used its data and analytics experience to get started with generative AI",
+      "date": "2024-04-08",
+      "url": "https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends/2024/eastman-gen-ai-use-cases-in-manufacturing.html",
+      "description": "Rather than trying to add gen AI to all its operations areas, Eastman is looking for manufacturing use cases using its previous technical experience.",
+      "topics": [
+        "AI",
+        "Manufacturing"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "dc91a624c4b29856",
+      "company": "PwC",
+      "title": "PwC’s Global NextGen Survey 2024: Success and succession in an AI world",
+      "date": "2024-03-13",
+      "url": "https://www.pwc.com/gx/en/issues/c-suite-insights/nextgen.html",
+      "description": "By dynamically fusing leadership transition and generative AI, family enterprises create opportunities for the next generation.",
+      "topics": [
+        "AI"
+      ],
+      "source_name": "PwC C-suite Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "69b7a6331a8a588e",
+      "company": "Deloitte",
+      "title": "Data point: Quantifying the value of tech companies’ “trusted actions”",
+      "date": "2024-02-20",
+      "url": "https://www.deloitte.com/us/en/insights/multimedia/videos/consumer-trust-in-tech-companies.html",
+      "description": "Customers might reward brands for taking specific trusted actions, but they are more likely to punish those that fall short.",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "9705c684602bb9c0",
+      "company": "Deloitte",
+      "title": "As human performance takes center stage, are traditional productivity metrics enough?",
+      "date": "2024-02-04",
+      "url": "https://www.deloitte.com/us/en/insights/topics/talent/human-capital-trends/2024/human-performance-is-the-new-way-to-measure-productivity.html",
+      "description": "As human performance takes center stage, new sources of data and AI can help organizations shift from measuring productivity to measuring human performance.",
+      "topics": [
+        "Economics"
+      ],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    },
+    {
+      "id": "e4d8bf785dfdb2da",
+      "company": "Deloitte",
+      "title": "Tech companies have a trust gap to overcome—especially with women",
+      "date": "2023-11-07",
+      "url": "https://www.deloitte.com/us/en/insights/industry/technology/bridge-data-privacy-concerns-in-women-with-technology.html",
+      "description": "Women are more wary than men about how their personal data is used and protected—particularly sensitive health data—and that may prevent them from maximizing future tech benefits.",
+      "topics": [],
+      "source_name": "Deloitte Insights",
+      "discovered_at": "2026-08-14T04:04:54Z",
+      "last_seen_at": "2026-08-14T04:04:54Z"
+    }
+  ]
+}
