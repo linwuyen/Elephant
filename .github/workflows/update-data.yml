@@ -41,6 +41,8 @@ jobs:
         run: |
           python scripts/validate_data.py
           python scripts/validate_decision_scores.py
+          python scripts/validate_investment.py
+          python scripts/test_investment_integration.py
 
       - name: Commit refreshed data and heartbeat
         run: |
