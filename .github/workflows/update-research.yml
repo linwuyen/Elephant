@@ -17,9 +17,11 @@ permissions:
   contents: write
   actions: write
 
+# Shared with update-data.yml because both workflows rebuild derived data and may
+# commit decision_scores.json / intelligence_layer.json.
 concurrency:
-  group: consultant-research-refresh
-  cancel-in-progress: true
+  group: elephant-data-writers
+  cancel-in-progress: false
 
 jobs:
   refresh:
@@ -45,6 +47,7 @@ jobs:
 
           status = json.loads(Path('data/consultant/status.json').read_text(encoding='utf-8'))
           assert status['status'] == 'ok'
+          assert status['coverage_complete'] is True
           assert status['score_influence'] is False
           assert status['reports'] >= 10
           companies = status.get('companies') or {}
