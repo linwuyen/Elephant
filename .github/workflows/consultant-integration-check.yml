@@ -1,0 +1,65 @@
+name: Validate consultant integration
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/sync_consultant_research.py'
+      - 'research.js'
+      - 'research.css'
+      - 'index.html'
+      - '.github/workflows/update-research.yml'
+      - '.github/workflows/consultant-integration-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pull live Consultant_System artifacts
+        run: python scripts/sync_consultant_research.py
+
+      - name: Validate SQLite snapshot
+        run: |
+          python - <<'PY'
+          import json, sqlite3
+          from pathlib import Path
+          status = json.loads(Path('data/consultant/status.json').read_text(encoding='utf-8'))
+          assert status['score_influence'] is False
+          assert status['reports'] >= 10
+          con = sqlite3.connect('data/consultant/consultant.db')
+          assert con.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+          tables = {x[0] for x in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+          assert {'reports','topics','report_topics','sources','meta'} <= tables
+          assert con.execute('SELECT COUNT(*) FROM reports').fetchone()[0] == status['reports']
+          con.close()
+          print(json.dumps(status, ensure_ascii=False, indent=2))
+          PY
+
+      - name: JavaScript syntax
+        run: node --check research.js
+
+      - name: Verify UI contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          required = [
+              'data-tab="research"', 'id="research"', 'id="researchRows"',
+              'id="sqlInput"', 'research.css', 'research.js', 'sql-wasm.js'
+          ]
+          missing = [x for x in required if x not in html]
+          assert not missing, missing
+          print('UI contract PASS')
+          PY

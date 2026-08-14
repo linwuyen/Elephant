@@ -3,21 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Elephant：自動更新的台灣經濟情報系統，整合 GDP、CPI、人口、產業、景氣領先指標與決策分數">
+<meta name="description" content="Elephant：自動更新的台灣經濟情報系統，整合 GDP、CPI、人口、產業、景氣領先指標、決策分數與全球顧問研究">
 <title>Elephant｜台灣經濟情報系統</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="summary.css">
 <link rel="stylesheet" href="history.css">
 <link rel="stylesheet" href="decision.css">
+<link rel="stylesheet" href="research.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/sql-wasm.js"></script>
 </head>
 <body>
 <div id="loading" class="loading"><div class="spinner"></div><div>載入最新官方資料…</div></div>
 <header class="hero">
   <div class="wrap hero-inner">
-    <div><div class="eyebrow">AUTO-UPDATED TAIWAN ECONOMIC INTELLIGENCE</div><h1>Elephant</h1><p>台灣經濟、人口、產業、領先訊號與決策分數的自動情報系統</p></div>
-    <div class="hero-status"><span class="pulse"></span><div><b>每日自動檢查</b><small>18:17 · Asia/Taipei</small></div></div>
+    <div><div class="eyebrow">AUTO-UPDATED TAIWAN ECONOMIC INTELLIGENCE</div><h1>Elephant</h1><p>台灣經濟、人口、產業、領先訊號、決策分數與全球顧問研究的自動情報系統</p></div>
+    <div class="hero-status"><span class="pulse"></span><div><b>每日自動檢查</b><small>Official 18:17 · Research 10:17 · Asia/Taipei</small></div></div>
   </div>
 </header>
 <main class="wrap">
@@ -30,6 +32,7 @@
     <button data-tab="macro">GDP／CPI</button>
     <button data-tab="population">人口</button>
     <button data-tab="industry">產業</button>
+    <button data-tab="research">顧問研究</button>
     <button data-tab="health">資料健康</button>
   </nav>
 
@@ -61,6 +64,21 @@
 
   <section id="industry" class="tab"><article class="panel"><div class="panel-head controls-head"><div><span class="kicker">MOEA</span><h2>產業生產、銷售與投資</h2></div><div class="controls"><label>資料集<select id="industryDataset"></select></label><label>序列<select id="industrySeries"></select></label><button class="secondary" id="industryCsv">下載 CSV</button></div></div><div class="chart tall"><canvas id="industryChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="industryRows"></tbody></table></div></article></section>
 
+  <section id="research" class="tab">
+    <article class="panel">
+      <div class="research-intro"><div><span class="kicker">CONSULTANT RESEARCH CONTEXT</span><h2>McKinsey / BCG / Deloitte / PwC 研究資料庫</h2><p class="sub" id="researchMeta">載入 Consultant_System…</p></div><div class="research-actions"><a class="secondary" href="data/consultant/reports.csv" download>下載 CSV</a><a class="secondary" href="data/consultant/consultant.db" download>下載 SQLite</a><a class="secondary" href="https://github.com/linwuyen/Consultant_System" target="_blank" rel="noopener">上游資料庫</a></div></div>
+      <div class="research-stats" id="researchStats"></div>
+      <div class="research-filters"><input id="researchKeyword" type="search" placeholder="搜尋標題、摘要、主題…"><select id="researchCompany"></select><select id="researchTopic"></select><select id="researchYear"></select><select id="researchSort"><option value="date-desc">日期：新 → 舊</option><option value="date-asc">日期：舊 → 新</option><option value="company">公司</option></select></div>
+      <div class="panel-head"><div><span class="kicker">RESEARCH FEED</span><h2>研究文章</h2></div><span class="tag" id="researchCount">—</span></div>
+      <div class="research-list" id="researchRows"><div class="notice">點擊「顧問研究」頁籤後載入。</div></div>
+      <article class="notice research-contract"><strong>資料邊界</strong><p>顧問研究是 Research Context：用來補充策略觀點、全球趨勢與管理層敘事；不直接進入 Elephant Cycle Score、Growth Persistence、Domestic Demand 或 Financial Conditions 的 deterministic 計分。</p></article>
+    </article>
+    <article class="panel sql-console"><div class="panel-head"><div><span class="kicker">SQLITE / WASM</span><h2>直接查詢 consultant.db</h2><p class="sub">瀏覽器以 sql.js 載入同步後的 SQLite；只允許唯讀 SELECT / WITH / PRAGMA。</p></div></div><textarea id="sqlInput">SELECT company, COUNT(*) AS reports, MAX(published_at) AS latest
+FROM reports
+GROUP BY company
+ORDER BY reports DESC;</textarea><div class="sql-actions"><button class="secondary" id="sqlRun">執行 SQL</button><button class="secondary" id="sqlExample">公司 coverage 範例</button></div><div id="sqlOutput" class="sql-output">SQLite 尚未載入。</div></article>
+  </section>
+
   <section id="health" class="tab">
     <article class="panel"><div class="panel-head"><div><span class="kicker">PIPELINE</span><h2>資料來源與更新狀態</h2></div><span class="tag" id="lastCheck">—</span></div><div class="source-grid" id="sourceCards"></div></article>
     <article class="panel"><div class="panel-head"><div><span class="kicker">PROVENANCE</span><h2>官方資料來源</h2></div></div><div class="source-links">
@@ -74,10 +92,11 @@
       <a class="source-link" href="https://www.ris.gov.tw/documents/data/en/3" target="_blank" rel="noopener"><b>戶政人口資料</b><span>內政部戶政司歷史人口資料</span></a>
       <a class="source-link" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener"><b>景氣指標與燈號</b><span>國發會領先／同時／落後指標</span></a>
       <a class="source-link" href="https://data.gov.tw/dataset/6100" target="_blank" rel="noopener"><b>PMI / NMI</b><span>國發會採購經理人指數</span></a>
+      <a class="source-link" href="https://github.com/linwuyen/Consultant_System" target="_blank" rel="noopener"><b>Consultant_System</b><span>McKinsey、BCG、Deloitte、PwC metadata / SQLite research context</span></a>
     </div></article>
     <article class="panel"><div class="panel-head"><div><span class="kicker">COVERAGE</span><h2>目前網頁可查序列</h2></div></div><div class="table-wrap"><table><thead><tr><th>來源</th><th>資料集</th><th>指標 / 序列</th><th>點數</th><th>期間</th></tr></thead><tbody id="coverageRows"></tbody></table></div></article>
     <article class="notice"><strong>SEGIS</strong><p>工商家數欄位與匯入規則已保留，但在沒有穩定可重現的公開直鏈或 APP ID/API Key 前，不會自動寫入任何不可驗證數值。</p></article>
-    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS、NDC 與決策輸入官方來源。</li><li>新資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次更新重算 Cycle Score、Growth Persistence、Domestic Demand、Financial Conditions 與摘要。</li><li>所有 Score 缺值時重新正規化權重並降低 Confidence，不把缺值當 0。</li><li>資料通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
+    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS、NDC 與決策輸入官方來源。</li><li>每日 10:17 同步 Consultant_System 的研究 metadata、CSV 與 SQLite snapshot。</li><li>新官方資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次官方資料更新重算 Cycle Score、Growth Persistence、Domestic Demand、Financial Conditions 與摘要。</li><li>顧問研究永遠是 context-only，不參與 deterministic Score。</li><li>所有 Score 缺值時重新正規化權重並降低 Confidence，不把缺值當 0。</li><li>資料通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
   </section>
 </main>
 <footer class="wrap footer"><span>Elephant · Taiwan Economic Intelligence</span><span id="footerSync"></span></footer>
@@ -86,4 +105,5 @@
 <script src="history.js"></script>
 <script src="summary.js"></script>
 <script src="decision.js"></script>
+<script src="research.js"></script>
 </body></html>
