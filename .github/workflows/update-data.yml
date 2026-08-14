@@ -34,6 +34,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Syntax check intelligence pipeline
+        run: |
+          python -m py_compile scripts/source_ai_concentration.py scripts/build_ai_concentration.py scripts/build_intelligence_layer.py scripts/validate_intelligence_layer.py
+
       - name: Fetch official sources and rebuild web data
         run: python scripts/update_data.py
 
@@ -41,6 +45,7 @@ jobs:
         run: |
           python scripts/validate_data.py
           python scripts/validate_decision_scores.py
+          python scripts/validate_intelligence_layer.py
           python scripts/validate_investment.py
           python scripts/test_investment_integration.py
 
