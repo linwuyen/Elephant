@@ -10,12 +10,14 @@ from common import TZ, URLS, load_json, save_json, request_bytes, decode_text
 import build_summary
 import build_history
 import build_decision_scores
+import build_investment
 import revision_tracker
 import source_macro
 import source_moea
 import source_ndc
 import source_ris
 import source_decision
+import source_alpha
 
 def segis(offline=False):
     if offline:
@@ -80,7 +82,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 7,
+        'pipeline_version': 8,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -91,6 +93,8 @@ def main():
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
     # Supplemental direct official inputs. Scores remain usable through NDC fallbacks if one download drifts.
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
+    # Alpha is an independent investment layer. Failure never contaminates macro scores or creates a BUY.
+    refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
     if not bad:
@@ -101,6 +105,7 @@ def main():
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
+    build_investment.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 if __name__ == '__main__':
