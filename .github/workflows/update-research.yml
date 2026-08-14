@@ -17,8 +17,6 @@ permissions:
   contents: write
   actions: write
 
-# Shared with update-data.yml because both workflows rebuild derived data and may
-# commit decision_scores.json / intelligence_layer.json.
 concurrency:
   group: elephant-data-writers
   cancel-in-progress: false
@@ -31,6 +29,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Align writer with latest main after acquiring lock
+        shell: bash
+        run: |
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          git reset --hard origin/main
+          echo "Writer base: $(git rev-parse HEAD)"
 
       - uses: actions/setup-python@v5
         with:
@@ -81,8 +86,6 @@ jobs:
             exit 0
           fi
           git commit -m 'data: sync consultant research and intelligence'
-          git fetch origin main
-          git rebase origin/main
           git push origin HEAD:main
 
       - name: Deploy refreshed research
