@@ -16,6 +16,8 @@ on:
       - 'history.js'
       - 'decision.css'
       - 'decision.js'
+      - 'research.css'
+      - 'research.js'
       - 'data/**'
       - 'scripts/validate_data.py'
       - 'scripts/validate_decision_scores.py'
