@@ -14,8 +14,11 @@ g=capital.get('guardrails',{})
 for k in ('portfolio_cannot_upgrade_upstream_action','unavailable_benchmarks_not_fabricated','personalized_sizing_requires_complete_portfolio_state','no_automatic_trading'):
  if g.get(k) is not True:fail('guardrail '+k)
 if policy.get('fail_closed') is not True:fail('policy must fail closed')
-if state.get('status') not in ('UNCONFIGURED','COMPLETE'):fail('portfolio status')
-if state.get('status')!='COMPLETE' and capital.get('target_sizing',{}).get('status')=='COMPLETE':fail('personal sizing without state')
+if state.get('status')!='UNCONFIGURED' or state.get('storage_policy')!='BROWSER_LOCAL_ONLY':fail('public portfolio state must remain browser-local sentinel')
+for k in ('as_of','investable_assets_twd','cash_twd','debt_twd','debt_effective_rate_pct','human_capital_factor'):
+ if state.get(k) is not None:fail('personal portfolio field committed: '+k)
+if state.get('positions') not in ([],None):fail('personal positions must not be committed')
+if capital.get('target_sizing',{}).get('status')=='COMPLETE' or capital.get('portfolio_risk',{}).get('personalized') is True:fail('server emitted personalized portfolio output')
 for a in opp.get('alternatives',[]):
  if a.get('status')=='UNAVAILABLE' and a.get('expected_return_pct') is not None:fail('fabricated alternative '+str(a.get('id')))
 if opp.get('available_count',0)<1 or not finite(opp.get('hurdle_expected_return_pct')):fail('hurdle missing')
@@ -37,4 +40,4 @@ for x in capital.get('probabilistic_returns',[]):
    v=d.get(k)
    if v is not None and not 0<=float(v)<=100:fail(k)
 if not finite(inputs.get('frictions',{}).get('round_trip_friction_pct')):fail('friction')
-print('CAPITAL ALLOCATION VALIDATION PASS');print('research queue:',len(rq.get('items',[])));print('hurdle:',opp.get('hurdle_asset'),opp.get('hurdle_expected_return_pct'));print('portfolio:',state.get('status'));print('risk:',capital.get('portfolio_risk',{}).get('status'));print('sizing:',capital.get('target_sizing',{}).get('status'))
+print('CAPITAL ALLOCATION VALIDATION PASS');print('research queue:',len(rq.get('items',[])));print('hurdle:',opp.get('hurdle_asset'),opp.get('hurdle_expected_return_pct'));print('portfolio privacy:',state.get('storage_policy'));print('risk:',capital.get('portfolio_risk',{}).get('status'));print('sizing:',capital.get('target_sizing',{}).get('status'))
