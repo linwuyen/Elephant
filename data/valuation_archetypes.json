@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "routes": {
+    "SECULAR_GROWTH":{"preferred_models":["scenario_forward_pe","fcf_yield"],"required_inputs":["forward_eps","scenario_probabilities","reference_price"]},
+    "CYCLICAL_MEMORY":{"preferred_models":["normalized_midcycle_pe","ev_ebitda_midcycle"],"required_inputs":["normalized_eps","cycle_position","reference_price"]},
+    "PROPERTY":{"preferred_models":["nav","backlog_completion"],"required_inputs":["nav_or_backlog","reference_price"]},
+    "UTILITY":{"preferred_models":["normalized_cash_flow","yield_spread"],"required_inputs":["normalized_cash_flow","reference_price"]},
+    "FINANCIAL":{"preferred_models":["pb_roe"],"required_inputs":["book_value_per_share","sustainable_roe","reference_price"]},
+    "ASSET_NAV":{"preferred_models":["nav"],"required_inputs":["nav_per_share","reference_price"]},
+    "GENERAL_INDUSTRIAL":{"preferred_models":["scenario_forward_pe","normalized_pe"],"required_inputs":["forward_or_normalized_eps","reference_price"]}
+  },
+  "fail_closed": true
+}
