@@ -67,6 +67,8 @@ jobs:
             echo 'No published data changes.'
           else
             git commit -m 'data: automated official refresh'
+            git fetch origin +refs/heads/main:refs/remotes/origin/main
+            git rebase origin/main
             git push origin HEAD:main
           fi
 
