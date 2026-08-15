@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "status": "UNCONFIGURED",
+  "as_of": null,
+  "base_currency": "TWD",
+  "investable_assets_twd": null,
+  "cash_twd": null,
+  "debt_twd": null,
+  "debt_effective_rate_pct": null,
+  "positions": [],
+  "human_capital_factor": null,
+  "note": "Fill this file only with current portfolio data. Until status=COMPLETE, Elephant will not emit personalized target weights or leverage recommendations."
+}
