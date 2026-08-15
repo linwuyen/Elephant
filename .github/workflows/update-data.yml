@@ -13,6 +13,8 @@ on:
       - 'data/opportunity_*.json'
       - 'data/model_registry.json'
       - 'data/valuation_archetypes.json'
+      - 'data/investment_constitution.json'
+      - 'data/constitution_research.json'
       - '.github/workflows/update-data.yml'
 
 permissions:
@@ -78,8 +80,6 @@ jobs:
             echo 'No published data changes.'
           else
             git commit -m 'data: automated official refresh'
-            # Computed data is point-in-time. Never rebase a computed-data commit onto
-            # a newer code/data base. A push race must fail and be recomputed later.
             git push origin HEAD:main
           fi
 
