@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "status": "ACTIVE",
+  "name": "Compounder / Asymmetric Growth Investment Constitution",
+  "authority": "FINAL_CAPITAL_ELIGIBILITY_GATE",
+  "objective": "Only deploy capital when fundamental earnings power can plausibly compound near 2x in 2-3 years with measurable catalysts, convex upside, survivable downside and quarterly falsifiability.",
+  "rules": {
+    "earnings_power": {
+      "horizon_months_min": 24,
+      "horizon_months_max": 36,
+      "minimum_eps_or_fcf_multiple": 1.8,
+      "preferred_multiple": 2.0
+    },
+    "fundamental_driven_return": {
+      "minimum_fundamental_upside_contribution_pct": 70,
+      "maximum_valuation_multiple_expansion_ratio": 1.5
+    },
+    "catalyst": {
+      "minimum_count": 1,
+      "required_source_quality": "FIRST_PARTY"
+    },
+    "convexity": {
+      "minimum_bull_price_multiple": 2.5,
+      "preferred_bull_price_multiple": 3.0
+    },
+    "survival_downside": {
+      "minimum_bear_return_pct": -40,
+      "preferred_bear_return_pct": -30,
+      "require_survival_status": "PASS"
+    },
+    "quarterly_falsifiability": {
+      "minimum_metrics": 3
+    }
+  },
+  "final_rule": "Constitution PASS AND upstream BUY_CANDIDATE are both required before Elephant may emit BUY_REVIEW/ADD_REVIEW or allocate new capital.",
+  "guardrails": [
+    "Missing evidence is BLOCKED, never PASS",
+    "Narrative text alone cannot satisfy a structured hard gate",
+    "Screen, Macro, Optimizer and Constitution cannot create upstream BUY_CANDIDATE",
+    "No automatic trading"
+  ]
+}
