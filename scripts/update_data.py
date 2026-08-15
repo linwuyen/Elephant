@@ -19,6 +19,7 @@ import build_vintage
 import build_decision_engine
 import build_decision_engine_v2
 import build_risk_budget_v2_availability
+import build_validation_os
 import revision_tracker
 import source_macro
 import source_moea
@@ -102,7 +103,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 17,
+        'pipeline_version': 18,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -141,6 +142,10 @@ def main():
     build_decision_engine.generate(append_journal=True)
     build_decision_engine_v2.generate()
     build_risk_budget_v2_availability.generate()
+    # Validation OS is downstream-only evidence. It can challenge confidence,
+    # regime assumptions, Score weights and later outcomes, but it has no write
+    # path back into production Scores, Risk Budget, Capital OS or Alpha actions.
+    build_validation_os.generate(append_journal=True)
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
