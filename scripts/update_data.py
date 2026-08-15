@@ -19,7 +19,7 @@ import build_vintage
 import build_decision_engine
 import build_decision_engine_v2
 import build_risk_budget_v2_availability
-import build_validation_os
+import build_validation_os_v1_1
 import revision_tracker
 import source_macro
 import source_moea
@@ -113,9 +113,6 @@ def main():
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
-    # TWSE is current-market freshness evidence for Risk Budget v2 only. v1 stays
-    # authoritative, so a transient TWSE outage must block the challenger current
-    # recommendation rather than degrade the production economic pipeline.
     refresh_source(status, bad, 'market_live', source_twse_market_live.update, a.offline_dir, False)
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
@@ -142,10 +139,9 @@ def main():
     build_decision_engine.generate(append_journal=True)
     build_decision_engine_v2.generate()
     build_risk_budget_v2_availability.generate()
-    # Validation OS is downstream-only evidence. It can challenge confidence,
-    # regime assumptions, Score weights and later outcomes, but it has no write
-    # path back into production Scores, Risk Budget, Capital OS or Alpha actions.
-    build_validation_os.generate(append_journal=True)
+    # Validation OS v1.1 compares Score champion/challenger only on paired common
+    # months and identical future outcomes. Evidence remains downstream-only.
+    build_validation_os_v1_1.generate(append_journal=True)
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
