@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "status": "ACTIVE",
+  "objective": "maximize long-run after-cost risk-adjusted geometric return while minimizing forced-sale and permanent-loss risk",
+  "constraints": {
+    "max_single_stock_pct": 25,
+    "max_sector_pct": 45,
+    "max_common_factor_pct": 60,
+    "cash_floor_pct": 15,
+    "max_gross_exposure_pct": 100,
+    "max_net_debt_to_investable_assets_pct": 25,
+    "min_position_pct": 3,
+    "max_new_position_pct": 12
+  },
+  "sizing": {
+    "method": "risk_adjusted_alpha",
+    "score_formula": "positive net alpha spread × confidence × probability_of_beating_hurdle / max(10, downside_pct)",
+    "normalize_to_investable_pct": 85
+  },
+  "lifecycle": {
+    "add_min_net_alpha_spread_pct": 8,
+    "trim_when_net_alpha_spread_below_pct": 2,
+    "exit_when_net_alpha_spread_below_pct": -5,
+    "trim_when_weight_over_target_pct": 5,
+    "reentry_hysteresis_days": 14,
+    "thesis_invalidated_action": "EXIT_REVIEW"
+  },
+  "fail_closed": true,
+  "note": "Portfolio Engine never upgrades WATCH/VERIFY into BUY. Personal target weights require COMPLETE portfolio_state inputs."
+}
