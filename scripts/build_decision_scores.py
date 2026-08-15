@@ -103,6 +103,13 @@ def find_series(series, prefix, needles):
 
 
 def find_inventory(series):
+    # The official MOEA total is the canonical Growth input.  It can have a
+    # shorter live history than legacy/fallback inventory series, so key
+    # authority must beat heuristic name/history tie-breaking.
+    canonical = series.get('inventory.manufacturing_index')
+    if canonical and canonical.get('data'):
+        return canonical
+
     cand = []
     for k, s in series.items():
         if not k.startswith('inventory.'):
