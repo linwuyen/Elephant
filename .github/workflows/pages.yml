@@ -72,6 +72,7 @@ jobs:
           python scripts/build_decision_engine_v2.py
           python scripts/build_risk_budget_v2_availability.py
           python scripts/build_validation_os.py --no-journal
+          python scripts/build_model_governance.py
       - name: Validate published contracts
         run: |
           python scripts/validate_data.py
@@ -146,6 +147,7 @@ jobs:
           python scripts/build_decision_engine_v2.py
           python scripts/build_risk_budget_v2_availability.py
           python scripts/build_validation_os.py --no-journal
+          python scripts/build_model_governance.py
           python scripts/build_vintage.py --validate
           python scripts/validate_decision_engine.py
           python scripts/validate_decision_engine_v2.py
