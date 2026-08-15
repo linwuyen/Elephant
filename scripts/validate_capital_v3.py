@@ -29,14 +29,15 @@ for k in ('no_automatic_trading','constitution_required_for_new_capital','consti
 if constitution.get('authority')!='FINAL_CAPITAL_ELIGIBILITY_GATE':fail('constitution authority')
 required_gates={'earnings_power','fundamental_driven_return','catalyst','convexity','survival_downside','quarterly_falsifiability'}
 if set(constitution.get('rules',{}))!=required_gates:fail('constitution rule set')
-if research.get('version')!=1 or not isinstance(research.get('securities'),dict):fail('constitution research contract')
+if research.get('version')!=1 or not isinstance(research.get('securities'),dict) or 'long_horizon_valuation' not in (research.get('schema') or {}):fail('constitution research contract')
+if cres.get('version')!=2:fail('constitution results version')
 for r in cres.get('securities',[]):
  gates=r.get('gates',{})
  if set(gates)!=required_gates:fail('constitution gates '+str(r.get('ticker')))
  statuses={g.get('status') for g in gates.values()}
  if not statuses <= {'PASS','FAIL','BLOCKED'}:fail('constitution status domain')
  if r.get('constitution_status')=='PASS' and statuses!={'PASS'}:fail('false constitution pass '+str(r.get('ticker')))
- if r.get('capital_eligible') and not (r.get('constitution_status')=='PASS' and r.get('upstream_action')=='BUY CANDIDATE'):fail('false capital eligibility '+str(r.get('ticker')))
+ if r.get('capital_eligible') and not (r.get('constitution_status')=='PASS' and r.get('upstream_action')=='BUY_CANDIDATE'):fail('false capital eligibility '+str(r.get('ticker')))
 cmap={str(r.get('ticker')):r for r in cres.get('securities',[])}
 for r in cap.get('lifecycle',[]):
  t=str(r.get('ticker'));cs=cmap.get(t,{}).get('constitution_status','BLOCKED')
@@ -48,6 +49,8 @@ if gov.get('model_version')!=reg.get('model_version') or not gov.get('artifacts'
 for r in cal.get('decisions',[]):
  for k in ('decision_fingerprint','model_version','code_commit','evidence_hash'):
   if r.get(k) in (None,''):fail('decision provenance '+k)
+ if r.get('model_version')=='capital-v3.1.0' and r.get('constitution_status') not in ('PASS','FAIL','BLOCKED'):fail('v3.1 decision missing constitution status')
+ if r.get('decision') in ('BUY_REVIEW','ADD_REVIEW') and r.get('model_version')=='capital-v3.1.0' and r.get('constitution_status')!='PASS':fail('v3.1 buy decision without constitution pass')
 print('CAPITAL V3.1 VALIDATION PASS')
 print('public alternatives:',oppin.get('public_available_count'))
 print('security facts:',len(store.get('securities',[])))
