@@ -129,23 +129,48 @@ def resolve_resource(catalog, extension, fallback):
 def rows_from_csv_bytes(body):
     return [normalize_keys(r) for r in csv.DictReader(decode_text(body).splitlines())]
 
+def candidate_field_coverage(keys):
+    """Count semantic NDC fields present in a CSV candidate.
+
+    Dataset 6099 ZIPs can contain several CSVs. Row count is not evidence that a
+    file is the canonical wide business-cycle table; a longer composite-only file
+    can otherwise outrank the field-rich table and silently drop component series
+    such as 股價指數. The source contract is semantic field coverage first.
+    """
+    keys = list(keys)
+    return sum(1 for aliases in FIELD_MAP.values() if find_col(keys, aliases))
+
 def rows_from_zip(body):
     with zipfile.ZipFile(io.BytesIO(body)) as zf:
         candidates = []
         for name in zf.namelist():
-            if name.lower().endswith('.csv'):
-                try:
-                    rows = rows_from_csv_bytes(zf.read(name))
-                except Exception:
-                    continue
-                if rows:
-                    keys = set(rows[0])
-                    score = sum(1 for x in ('Date', '領先指標綜合指數', '景氣對策信號綜合分數') if any(x in k for k in keys))
-                    candidates.append((score, len(rows), rows))
+            if not name.lower().endswith('.csv'):
+                continue
+            try:
+                rows = rows_from_csv_bytes(zf.read(name))
+            except Exception:
+                continue
+            if not rows:
+                continue
+            keys = list(rows[0])
+            date_col = find_col(keys, ('Date', '日期', '資料期'))
+            leading = find_col(keys, FIELD_MAP['leading_no_trend'])
+            coincident = find_col(keys, FIELD_MAP['coincident_no_trend'])
+            if not date_col or not leading or not coincident:
+                continue
+            coverage = candidate_field_coverage(keys)
+            # Full semantic coverage dominates row count. Existing identity fields
+            # only break ties; row count is deliberately last.
+            identity = sum(
+                1 for aliases in (
+                    FIELD_MAP['leading_composite'], FIELD_MAP['policy_score'], FIELD_MAP['stock_index']
+                ) if find_col(keys, aliases)
+            )
+            candidates.append((coverage, identity, len(rows), name, rows))
         if not candidates:
-            raise ValueError('NDC ZIP contains no parseable CSV')
-        candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
-        return candidates[0][2]
+            raise ValueError('NDC ZIP contains no parseable business-cycle CSV with required leading/coincident fields')
+        candidates.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
+        return candidates[0][4]
 
 def parse_signal_rows(rows):
     if not rows:
@@ -239,7 +264,7 @@ def update(offline=None):
         'notes': 'NDC states leading, coincident and lagging historical series may be revised on each monthly release.',
     }
     save_json('ndc.json', obj)
-    msg = 'NDC leading/coincident/lagging indicators and business signal refreshed'
+    msg = f'NDC leading/coincident/lagging indicators and business signal refreshed; semantic fields={len(series)}'
     if warnings:
         msg += '; warnings: ' + '; '.join(warnings)
     return {'latest_period': latest, 'rows': len(rows), 'message': msg, 'warnings': warnings}
