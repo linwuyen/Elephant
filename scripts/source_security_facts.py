@@ -2,10 +2,18 @@
 from __future__ import annotations
 import datetime as dt,json
 from common import TZ,request_bytes,decode_text,load_json,save_json,num
-URLS={'monthly_revenue':'https://openapi.twse.com.tw/v1/opendata/t187ap05_P','income_statement':'https://openapi.twse.com.tw/v1/opendata/t187ap06_X_ci','balance_sheet':'https://openapi.twse.com.tw/v1/opendata/t187ap07_X_ci'}
+
+SOURCES=[
+ ('monthly_revenue','TWSE','https://openapi.twse.com.tw/v1/opendata/t187ap05_L'),
+ ('income_statement','TWSE','https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci'),
+ ('balance_sheet','TWSE','https://openapi.twse.com.tw/v1/opendata/t187ap07_L_ci'),
+ ('monthly_revenue','TPEX','https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O'),
+ ('income_statement','TPEX','https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap06_O_ci'),
+ ('balance_sheet','TPEX','https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap07_O_ci'),
+]
 
 def fetch_json(url):
- b,_=request_bytes(url,timeout=60,retries=4);x=json.loads(decode_text(b));
+ b,_=request_bytes(url,timeout=60,retries=4);x=json.loads(decode_text(b))
  if not isinstance(x,list) or len(x)<10:raise ValueError(f'implausible row count: {len(x) if isinstance(x,list) else type(x)}')
  return x
 
@@ -18,34 +26,45 @@ def code(r):return str(pick(r,'公司代號','公司代碼','證券代號','Code
 def row_period(r):
  y=pick(r,'年度','Year');q=pick(r,'季別','季','Quarter');ym=pick(r,'資料年月','年月','DataMonth')
  if ym:
-  s=str(ym).strip().replace('/','').replace('-','');
+  s=str(ym).strip().replace('/','').replace('-','')
   try:
    if len(s) in (5,6):
     yy=int(s[:-2]);yy=yy+1911 if yy<1911 else yy;return f'{yy:04d}-{int(s[-2:]):02d}'
-  except:pass
+  except Exception:pass
  if y:
   yy=int(float(str(y).replace(',','')));yy=yy+1911 if yy<1911 else yy
   if q:return f'{yy:04d}-Q{int(float(q))}'
   return str(yy)
  return None
 
-def compact(kind,r):
- base={'period':row_period(r),'company_name':pick(r,'公司名稱','CompanyName'),'statement_date':pick(r,'出表日期','Date')}
+def compact(kind,r,market):
+ base={'period':row_period(r),'market':market,'company_name':pick(r,'公司名稱','CompanyName'),'statement_date':pick(r,'出表日期','Date')}
  if kind=='monthly_revenue':base.update({'revenue_month':num(pick(r,'營業收入-當月營收','當月營收','當月營業收入')),'revenue_yoy_pct':num(pick(r,'營業收入-去年同月增減(%)','去年同月增減(%)','去年同月增減百分比')),'revenue_ytd':num(pick(r,'累計營業收入-當月累計營收','當月累計營收')),'revenue_ytd_yoy_pct':num(pick(r,'累計營業收入-前期比較增減(%)','前期比較增減(%)'))})
  elif kind=='income_statement':base.update({'revenue':num(pick(r,'營業收入','Revenue')),'gross_profit':num(pick(r,'營業毛利（毛損）','營業毛利(毛損)','GrossProfit')),'operating_income':num(pick(r,'營業利益（損失）','營業利益(損失)','OperatingIncome')),'net_income':num(pick(r,'本期淨利（淨損）','本期淨利(淨損)','NetIncome')),'eps':num(pick(r,'基本每股盈餘（元）','基本每股盈餘(元)','基本每股盈餘','EPS'))})
  else:base.update({'assets':num(pick(r,'資產總額','資產總計','Assets')),'liabilities':num(pick(r,'負債總額','負債總計','Liabilities')),'equity':num(pick(r,'權益總額','權益總計','Equity')),'cash':num(pick(r,'現金及約當現金','CashAndCashEquivalents'))})
  return base
 
+def newer(a,b):
+ return str((a or {}).get('period') or '')>=str((b or {}).get('period') or '')
+
 def run():
- bundle=load_json('alpha_engine.json',{});alpha=bundle.get('alpha') or {};screen=bundle.get('screen') or {};wanted={'2330'}|{str(x.get('ticker')) for x in alpha.get('stocks',[])}|{str(x.get('ticker')) for x in screen.get('deep_research_queue',[]) or []};old=load_json('security_official_facts.json',{'facts':{}});facts=dict(old.get('facts') or {});health={};now=dt.datetime.now(TZ).replace(microsecond=0)
- for kind,url in URLS.items():
+ bundle=load_json('alpha_engine.json',{});alpha=bundle.get('alpha') or {};screen=bundle.get('screen') or {};wanted={'2330'}|{str(x.get('ticker')) for x in alpha.get('stocks',[])}|{str(x.get('ticker')) for x in screen.get('deep_research_queue',[]) or []};old=load_json('security_official_facts.json',{'facts':{}});facts=dict(old.get('facts') or {});health={};now=dt.datetime.now(TZ).replace(microsecond=0);total_matches=0;market_matches={'TWSE':0,'TPEX':0}
+ for kind,market,url in SOURCES:
+  key=f'{kind}_{market}'
   try:
    rows=fetch_json(url);used=0
    for r in rows:
     t=code(r)
     if t not in wanted:continue
-    x=compact(kind,r);facts.setdefault(t,{})[kind]=x;used+=1
-   health[kind]={'status':'ok','rows':len(rows),'matched':used,'url':url}
-  except Exception as e:health[kind]={'status':'last_good' if facts else 'error','message':str(e),'url':url}
- out={'version':1,'updated_at':now.isoformat(),'facts':facts,'source_health':health,'universe':sorted(wanted),'guardrail':'Official facts are numeric evidence only; they cannot create BUY and missing endpoints retain last-good without inventing zero.'};save_json('security_official_facts.json',out);return out
+    x=compact(kind,r,market);slot=facts.setdefault(t,{});prev=slot.get(kind)
+    if prev is None or newer(x,prev):slot[kind]=x
+    used+=1
+   total_matches+=used;market_matches[market]+=used;health[key]={'status':'ok','rows':len(rows),'matched':used,'url':url}
+  except Exception as e:
+   has_last_good=any((v or {}).get(kind,{}).get('market')==market for v in facts.values());health[key]={'status':'last_good' if has_last_good else 'error','matched':0,'message':str(e),'url':url}
+ covered=sum(1 for t in wanted if facts.get(t));markets_with_matches=sum(1 for v in market_matches.values() if v>0)
+ if total_matches==0:raise RuntimeError('listed-market security fact ingestion matched zero target securities; fail closed')
+ if covered<max(5,len(wanted)//3):raise RuntimeError(f'listed-market security fact coverage implausibly low: {covered}/{len(wanted)}')
+ if markets_with_matches<2:raise RuntimeError(f'expected both TWSE and TPEX target coverage, got {market_matches}')
+ out={'version':2,'updated_at':now.isoformat(),'facts':facts,'source_health':health,'universe':sorted(wanted),'coverage':{'target_count':len(wanted),'covered_tickers':covered,'covered_pct':round(covered/len(wanted)*100,1),'matched_rows':total_matches,'market_matches':market_matches},'guardrail':'Only listed TWSE (L) and TPEx (O) endpoints are valid for this universe. Zero/implausible coverage fails closed; missing endpoints retain last-good without inventing zero.'};save_json('security_official_facts.json',out);return out
 if __name__=='__main__':print(json.dumps(run(),ensure_ascii=False,indent=2))
