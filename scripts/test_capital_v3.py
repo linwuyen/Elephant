@@ -23,6 +23,11 @@ q=source_security_facts.compact('income_statement',{' 公司代號 ':'3081','年
 assert q['eps']==12.34 and q['revenue']==1000 and q['period']=='2026-Q2'
 bal=source_security_facts.compact('balance_sheet',{'公司代號':'3081','年度':'115','季別':'2','資產總計':'2000','負債總計':'800','權益總計':'1200'},'TPEX')
 assert bal['assets']==2000 and bal['liabilities']==800 and bal['equity']==1200
+comp=build_security_fact_store.completeness({'income_statement':{'eps':1},'monthly_revenue':{'revenue_month':1},'balance_sheet':{'assets':1}},{'metrics':[]})
+assert 'earnings_basis' in comp['available'] and 'revenue_trend' in comp['available']
+assert 'balance_sheet_cash_flow' in comp['missing'] and comp['cash_flow_status']=='MISSING_DEDICATED_CASH_FLOW_EVIDENCE'
+comp2=build_security_fact_store.completeness({'balance_sheet':{'assets':1}},{'metrics':['balance_sheet_cash_flow']})
+assert 'balance_sheet_cash_flow' in comp2['available'] and comp2['cash_flow_status']=='VERIFIED'
 sf=build_security_fact_store.generate();assert any(x['ticker']=='2330' and x['stage']=='BENCHMARK' for x in sf['securities'])
 pm=build_portfolio_model.generate();assert pm['alternative_loadings']['CASH']['TAIWAN_MARKET']==0
 print('CAPITAL V3 TEST PASS')
