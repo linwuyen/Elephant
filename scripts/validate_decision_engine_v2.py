@@ -49,8 +49,13 @@ def main():
             if x.get('direction_accuracy') is not None:
                 assert 0 <= float(x['direction_accuracy']) <= 1
 
+    # External outcomes are evidence-gated, not fabricated. At least one genuine
+    # macro outcome must be present. Market outcomes are optional because the
+    # current official NDC artifact may omit stock_index; their absence must block
+    # market/risk evidence, not fail the whole challenger or invite a proxy.
     outcomes = obj.get('external_outcome_validation') or {}
     assert any(k in outcomes for k in CORE)
+    external_sample_total = 0
     market_seen = False
     for key in CORE:
         for target, item in (outcomes.get(key) or {}).items():
@@ -58,19 +63,27 @@ def main():
                 market_seen = True
             for h, x in ((item or {}).get('horizons') or {}).items():
                 assert h in ('3m', '6m', '12m')
-                assert int(x.get('samples', 0)) >= 0
+                samples = int(x.get('samples', 0))
+                assert samples >= 0
+                external_sample_total += samples
                 if x.get('direction_accuracy') is not None:
                     assert 0 <= float(x['direction_accuracy']) <= 1
-    assert market_seen, 'stock-index external outcome missing'
+    assert external_sample_total > 0, 'no sampled external outcomes available'
 
     risk = obj.get('risk_budget_backtest') or {}
-    assert risk.get('authority') is False
     assert risk.get('status') in ('DIAGNOSTIC_ONLY', 'BLOCKED_NO_STOCK_INDEX')
     if risk.get('status') == 'DIAGNOSTIC_ONLY':
+        assert risk.get('authority') is False
+        assert market_seen, 'Risk Budget backtest cannot run without market evidence'
         assert int(risk.get('observations', 0)) > 0
         pv = risk.get('policy_vs_static_60_equity') or {}
         assert pv.get('cash_return_assumption_pct') == 0.0
         assert pv.get('transaction_costs_included') is False
+    else:
+        # Missing market data is a valid evidence-blocked state. It must keep the
+        # challenger from promotion via the risk-observation gate.
+        assert not market_seen
+        assert int(risk.get('observations', 0) or 0) == 0
 
     regime = obj.get('regime_similarity') or {}
     assert 0 <= float(regime.get('similarity', 0)) <= 100
@@ -79,6 +92,9 @@ def main():
     gate = obj.get('promotion_gate') or {}
     assert gate.get('automatic_promotion') is False
     assert gate.get('status') in ('CHALLENGER_ONLY', 'PROMOTION_ELIGIBLE_FOR_REVIEW')
+    if risk.get('status') == 'BLOCKED_NO_STOCK_INDEX':
+        assert gate.get('promotion_eligible') is False
+        assert (gate.get('gates') or {}).get('risk_backtest_observations_at_least_36') is False
     if gate.get('promotion_eligible'):
         assert all((gate.get('gates') or {}).values())
 
@@ -88,6 +104,7 @@ def main():
             assert finite(conf[k]) and 0 <= float(conf[k]) <= 100
 
     print('DECISION ENGINE V2 VALIDATION PASS')
+    print('market outcome:', 'available' if market_seen else 'BLOCKED_NO_OFFICIAL_STOCK_INDEX')
 
 
 if __name__ == '__main__':
