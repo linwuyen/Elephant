@@ -4,6 +4,7 @@ import copy
 import datetime as dt
 
 import build_validation_os as vos
+import build_validation_os_v1_1 as vos11
 import build_decision_scores as bds
 
 # Geometric confidence is monotone: degrading a source factor must reduce it.
@@ -49,6 +50,18 @@ finally:
 before=copy.deepcopy(bds.WEIGHTS)
 vos.equal_weight_scores()
 assert bds.WEIGHTS==before
+
+# Paired comparison must never compare different champion/challenger sample sets.
+real_cycle=vos.cycle_map
+try:
+    vos.cycle_map=lambda:{'2020-04':10.0,'2020-05':20.0,'2020-06':30.0,'2020-07':40.0}
+    champion=[{'period':'2020-01','score':1},{'period':'2020-02','score':2},{'period':'2020-03','score':3},{'period':'2020-04','score':4}]
+    challenger=[{'period':'2020-02','score':2.2},{'period':'2020-03','score':3.2},{'period':'2020-04','score':4.2}]
+    paired=vos11.paired_future_cycle_metrics(champion,challenger,3)
+    assert paired['samples']==3
+    assert paired['champion']['samples']==paired['equal_weight_challenger']['samples']==3
+finally:
+    vos.cycle_map=real_cycle
 
 # A prospective journal must not count an outcome that was already known at capture.
 entries=[{
