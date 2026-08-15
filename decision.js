@@ -77,4 +77,12 @@
     s.src='intelligence.js'; s.defer=true; s.dataset.elephantIntelligence='1';
     document.head.appendChild(s);
   }
+
+  // Closed-loop Decision Engine stays downstream from scores/investment. It may
+  // size risk envelopes, but it cannot modify deterministic scores or Alpha actions.
+  if(!document.querySelector('script[data-elephant-decision-engine]')){
+    const s=document.createElement('script');
+    s.src='decision_engine.js'; s.defer=true; s.dataset.elephantDecisionEngine='1';
+    document.head.appendChild(s);
+  }
 })();
