@@ -11,8 +11,10 @@ import build_summary
 import build_history
 import build_decision_scores
 import build_ai_concentration
+import build_validation_forward
 import build_intelligence_layer
 import build_investment
+import store_vintage
 import revision_tracker
 import source_macro
 import source_moea
@@ -20,7 +22,9 @@ import source_ndc
 import source_ris
 import source_decision
 import source_ai_concentration
+import source_supplements
 import source_alpha
+
 
 def segis(offline=False):
     if offline:
@@ -34,6 +38,7 @@ def segis(offline=False):
     except Exception as e:
         msg += f' Catalog probe: {type(e).__name__}.'
     return {'status': 'blocked', 'latest_period': None, 'message': msg, 'candidate_download': found, 'source_url': URLS['segis_catalog']}
+
 
 def coverage(status):
     macro = load_json('macro.json', {})
@@ -64,6 +69,7 @@ def coverage(status):
         rows.append({'source':'mof','dataset':'official.ai_concentration_inputs','indicator':iid,'name':s.get('name',iid),'frequency':'monthly','points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
     save_json('coverage.json', {'datasets': rows, 'source_status': status['sources']})
 
+
 def refresh_source(status, bad, sid, fn, offline_dir, critical=True):
     try:
         status['sources'][sid] = {'status': 'ok', **fn(offline_dir)}
@@ -79,6 +85,7 @@ def refresh_source(status, bad, sid, fn, offline_dir, critical=True):
         }
         print(sid, 'DEGRADED', repr(e), file=sys.stderr)
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--offline-dir', type=Path)
@@ -89,7 +96,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 9,
+        'pipeline_version': 10,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -98,12 +105,11 @@ def main():
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
-    # Supplemental direct official inputs. Scores remain usable through NDC fallbacks if one download drifts.
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
-    # AI concentration uses a separate MOF commodity-export table. Failure lowers
-    # score confidence but never contaminates the core macro pipeline.
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
-    # Alpha is an independent investment layer. Failure never contaminates macro scores or creates a BUY.
+    # Current official endpoints and a verified-TLS retry path for known runner/CA drift.
+    # This layer only enriches missing series; it never disables certificate validation.
+    refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
@@ -112,13 +118,19 @@ def main():
     save_json('status.json', status)
     coverage(status)
     revision_tracker.record(before, now)
+
+    # Deterministic rebuild order: state -> historical reconstruction -> decision scores
+    # -> AI concentration -> validation/forward -> immutable as-seen vintage.
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
     build_ai_concentration.generate()
+    build_validation_forward.generate()
+    store_vintage.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
+
 
 if __name__ == '__main__':
     main()
