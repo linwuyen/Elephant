@@ -43,12 +43,24 @@ def main():
 
     sc=obj.get('score_challengers') or {}
     assert sc.get('authority') is False
+    assert 'paired common-sample' in str(sc.get('comparison_contract'))
     cd=sc.get('dimensions') or {}
     assert set(cd)==DIRECTIONAL
     for key,row in cd.items():
         assert row.get('automatic_promotion') is False
-        assert row.get('status') in ('CHAMPION_RETAINS','CHALLENGER_WORTH_REVIEW')
+        assert row.get('status') in ('CHAMPION_RETAINS','CHALLENGER_WORTH_REVIEW','BLOCKED_INSUFFICIENT_COMMON_SAMPLE')
         assert set(row.get('horizons') or {})=={'3m','6m'}
+        enough=True
+        for h,hrow in (row.get('horizons') or {}).items():
+            c=(hrow.get('champion') or {}).get('samples')
+            e=(hrow.get('equal_weight_challenger') or {}).get('samples')
+            common=hrow.get('common_samples')
+            assert int(c)==int(e)==int(common),(key,h,c,e,common)
+            enough=enough and int(common)>=int(row.get('minimum_common_samples') or 36)
+        if row.get('status')=='BLOCKED_INSUFFICIENT_COMMON_SAMPLE':
+            assert not enough
+        else:
+            assert enough
 
     ps=obj.get('prospective_scorecards') or {}
     assert set(('macro','risk','portfolio','alpha')).issubset(ps)
