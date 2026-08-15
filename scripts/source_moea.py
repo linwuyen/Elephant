@@ -3,6 +3,7 @@ import re
 import zipfile
 from html.parser import HTMLParser
 from common import *
+from source_moea_live import base_year, fetch_live_page, validate_live_page
 
 CODES={'Z','C','I1','I2','I3','I4','24','25','26','27','28','29','30','31','34','2610','2611','2612','2613','2640'}
 KEYWORDS=('積體電路','半導體封裝','半導體測試')
@@ -92,11 +93,8 @@ def parse(rows,value_cols,aliases=()):
         dedup={p:v for p,v in x['data']}; x['data']=[[p,v] for p,v in sorted(dedup.items())]
     return grouped
 
-def live_sales_index():
-    body=request_bytes(SALES_INDEX_PAGE,60,3)[0]
-    text=decode_text(body)
-    if '製造業銷售指數' not in text or '110年=100' not in text:
-        raise ValueError('MOEA live sales-index page signature changed')
+def parse_live_sales_index(body):
+    text=validate_live_page(body,'製造業銷售指數')
     hp=RowsParser(); hp.feed(text); current_year=None
     series={k:{'name':name,'data':[]} for k,(pos,name) in SALES_POS.items()}
     for row in hp.rows:
@@ -116,7 +114,11 @@ def live_sales_index():
     for item in series.values():
         item['data']=[[p,v] for p,v in sorted(dict(item['data']).items())]
     if len(series['C']['data'])<5: raise ValueError(f'MOEA live sales-index parse too few months: {len(series["C"]["data"])}')
-    return {'indicator_id':'moea.manufacturing.sales_index_2021','name':'製造業銷售指數（現行基期）','unit':'index_2021_100','series':series}
+    return {'indicator_id':'moea.manufacturing.sales_index_current','name':'製造業銷售指數（現行基期）','unit':f'index_{base_year(body)}_100','series':series}
+
+def live_sales_index():
+    body=fetch_live_page(SALES_INDEX_PAGE,'製造業銷售指數',60,3)
+    return parse_live_sales_index(body)
 
 def update(offline=None):
     old=load_json('industry.json',{'datasets':{}})

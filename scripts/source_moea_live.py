@@ -7,17 +7,11 @@ import time
 
 from common import decode_text, request_bytes
 
-_BASE_RE = re.compile(r'基期.{0,12}?\d{2,4}年[=＝]100')
+_BASE_RE = re.compile(r'基期.{0,12}?(\d{2,4})年[=＝]100')
 
 
 def normalized_visible_text(body: bytes | str) -> str:
-    """Return compact visible-ish text for resilient semantic checks.
-
-    MOEA's ASP.NET pages may change whitespace, inline tags, dash variants, or the
-    published base year without changing the indicator itself.  Strip tags and
-    normalize only presentation-level differences; indicator semantics remain
-    mandatory.
-    """
+    """Compact presentation-only differences while preserving indicator text."""
     text = decode_text(body) if isinstance(body, (bytes, bytearray)) else str(body)
     text = html.unescape(text)
     text = re.sub(r'<[^>]+>', '', text)
@@ -25,25 +19,32 @@ def normalized_visible_text(body: bytes | str) -> str:
     return re.sub(r'\s+', '', text)
 
 
+def base_year(body: bytes | str) -> int:
+    compact = normalized_visible_text(body)
+    match = _BASE_RE.search(compact)
+    if not match:
+        raise ValueError('MOEA live page missing base-year signature')
+    year = int(match.group(1))
+    return year if year >= 1911 else year + 1911
+
+
 def validate_live_page(body: bytes, indicator: str) -> str:
     compact = normalized_visible_text(body)
     required = re.sub(r'\s+', '', indicator)
     if required not in compact:
         raise ValueError(f'MOEA live page missing indicator: {indicator}')
-    if not _BASE_RE.search(compact):
-        raise ValueError(f'MOEA live page missing base-year signature: {indicator}')
+    base_year(body)
     if not re.search(r'\d{1,2}月', compact):
         raise ValueError(f'MOEA live page missing monthly rows: {indicator}')
     return decode_text(body)
 
 
 def fetch_live_page(url: str, indicator: str, timeout: int = 60, attempts: int = 3) -> bytes:
-    """Fetch an official MOEA live table with semantic retry.
+    """Fetch an official MOEA live table and retry semantic-invalid HTML.
 
-    Network success is not enough: the ASP.NET endpoint can occasionally return
-    an alternate/generic HTML body.  Each attempt must pass the indicator-specific
-    semantic contract.  Retries use a harmless cache-busting query parameter and
-    never accept another indicator's page as a substitute.
+    A 200 response is insufficient: the ASP.NET endpoint can occasionally return
+    an alternate/generic body. Every attempt must still contain the requested
+    indicator, a published base year, and monthly rows. Wrong pages fail closed.
     """
     errors = []
     for attempt in range(attempts):
