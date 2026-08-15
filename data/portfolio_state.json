@@ -1,6 +1,7 @@
 {
   "version": 1,
   "status": "UNCONFIGURED",
+  "storage_policy": "BROWSER_LOCAL_ONLY",
   "as_of": null,
   "base_currency": "TWD",
   "investable_assets_twd": null,
@@ -9,5 +10,5 @@
   "debt_effective_rate_pct": null,
   "positions": [],
   "human_capital_factor": null,
-  "note": "Until status=COMPLETE, Elephant emits no personalized target weights or leverage recommendation."
+  "note": "Public repository sentinel only. Never commit personal holdings, debt or leverage here. Personalized inputs belong in browser localStorage; server-side Capital OS stays fail-closed."
 }
