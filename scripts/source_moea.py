@@ -130,15 +130,23 @@ def update(offline=None):
     if not series: raise ValueError('MOEA core production parse empty')
     out['datasets']['moea.industry.production']={'indicator_id':'moea.industry.production_index','name':'工業生產指數','unit':infer_unit(rows,'index_2021_100'),'series':series}
 
-    # Required current sales index. Offline regression uses the archived official CSV;
-    # live runs use MOEA's current statistics page to avoid retired e.csv/dmz9 endpoints.
+    # Sales is an exact published indicator but the EE521 ASP.NET transport is not
+    # machine-stable on GitHub runners. Keep the last-good MOEA series when that
+    # transport fails; Decision Score has an exact NDC republication fallback for
+    # 製造業銷售量指數, so an HTML delivery outage must not take down core MOEA health.
+    sales_refreshed=False
     if offline:
         rows=resource_rows(offline,'moea_manufacturing_sales_volume_index.csv',URLS['moea_sales_volume']); total+=len(rows)
         oldseries=parse(rows,('統計值(指數)','統計值'),('銷售量指數','銷售指數'))
         if not oldseries: raise ValueError('MOEA archived sales-volume parse empty')
         out['datasets']['moea.manufacturing.sales_volume']={'indicator_id':'moea.manufacturing.sales_volume_index','name':'製造業銷售量指數（歷史基期）','unit':infer_unit(rows,'index_2016_100'),'series':oldseries}
+        sales_refreshed=True
     else:
-        out['datasets']['moea.manufacturing.sales_index_current']=live_sales_index()
+        try:
+            out['datasets']['moea.manufacturing.sales_index_current']=live_sales_index()
+            sales_refreshed=True
+        except Exception as e:
+            warnings.append(f'current sales live transport unavailable; retained last-good MOEA series and Decision Score may use exact NDC 製造業銷售量指數 fallback ({type(e).__name__}: {e})')
 
     # Supplemental legacy datasets: preserve the last good copy if MOEA retires the old download URL.
     try:
@@ -169,6 +177,8 @@ def update(offline=None):
         warnings.append(f'investment legacy endpoint unavailable; retained last-good copy ({type(e).__name__})')
 
     save_json('industry.json',out)
-    message='MOEA core production + current sales index refreshed'
+    message='MOEA core production refreshed'
+    if sales_refreshed: message+='; current sales index refreshed'
+    else: message+='; sales HTML transport unavailable, exact official-series fallback remains available'
     if warnings: message+='; warnings: '+'; '.join(warnings)
     return {'latest_period':max_period(out),'rows':total,'message':message,'warnings':warnings}
