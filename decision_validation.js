@@ -1,8 +1,9 @@
 (()=>{
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=v=>v==null?'—':Number(v).toFixed(1);
+  const pct=v=>v==null?'—':`${(Number(v)*100).toFixed(0)}%`;
   const signed=v=>v==null?'—':`${Number(v)>=0?'+':''}${Number(v).toFixed(2)}`;
-  const names={growth_persistence:'Growth Persistence',domestic_demand:'Domestic Demand',financial_conditions:'Financial Conditions',ai_concentration:'AI Concentration'};
+  const names={cycle:'Cycle',growth_persistence:'Growth Persistence',domestic_demand:'Domestic Demand',financial_conditions:'Financial Conditions',ai_concentration:'AI Concentration'};
 
   function addStyle(){
     if(document.querySelector('link[data-elephant-validation-style]'))return;
@@ -40,7 +41,37 @@
     return `<article class="validation-layer ${ready?'ready':'blocked'}"><div><span class="engine-badge ${ready?'good':'warn'}">${esc(x.status)}</span><h3>${esc(title)}</h3><p>${esc(x.question||'')}</p></div>${ready?`<div class="validation-layer-score"><b>${signed(x.score)}</b><small>Coverage ${fmt(x.confidence)}</small></div>`:`<p class="engine-muted">${esc(x.reason||'Evidence contract 尚未滿足。')}</p>`}${ready?`<details><summary>Components</summary>${(x.components||[]).map(c=>`<div class="validation-component"><b>${esc(c.name)}</b><span>${signed(c.score)} · raw ${fmt(c.raw)} · ${esc(c.period)}</span></div>`).join('')}</details>`:''}</article>`;
   }
 
-  function render(validation,structural){
+  function v2HorizonCell(dim,h){
+    const x=dim?.horizons?.[h]||{},cur=x.current||{};
+    const skill=x.brier_skill_vs_climatology;
+    return `<td><b>${pct(cur.probability)}</b><small>OOS n=${x.oos_predictions??0} · local n=${cur.local_sample_size??0}<br>Confidence ${fmt(cur.model_confidence)} · Brier skill ${skill==null?'—':fmt(Number(skill)*100)+'%'}</small></td>`;
+  }
+
+  function v2Rows(v2){
+    return ['cycle','growth_persistence','domestic_demand','financial_conditions'].map(key=>{
+      const dim=v2?.walk_forward_oos?.[key]||{};
+      return `<tr><td><strong>${esc(names[key]||key)}</strong><small>strict expanding-window</small></td>${v2HorizonCell(dim,'3m')}${v2HorizonCell(dim,'6m')}</tr>`;
+    }).join('');
+  }
+
+  function outcomeRows(v2){
+    const out=v2?.external_outcome_validation||{};
+    return ['cycle','growth_persistence','domestic_demand','financial_conditions'].map(key=>{
+      const ip=out?.[key]?.industrial_production_yoy?.horizons?.['6m']||{};
+      const market=out?.[key]?.stock_forward_return?.horizons?.['6m']||{};
+      return `<tr><td><strong>${esc(names[key])}</strong></td><td>${ip.pearson==null?'—':Number(ip.pearson).toFixed(2)}<small>n=${ip.samples??0} · direction ${ip.direction_accuracy==null?'—':pct(ip.direction_accuracy)}</small></td><td>${market.pearson==null?'—':Number(market.pearson).toFixed(2)}<small>n=${market.samples??0} · direction ${market.direction_accuracy==null?'—':pct(market.direction_accuracy)}</small></td></tr>`;
+    }).join('');
+  }
+
+  function v2Panel(v2){
+    const c=v2?.confidence||{},gate=v2?.promotion_gate||{},risk=v2?.risk_budget_backtest||{},pv=risk.policy_vs_static_60_equity||{};
+    const status=gate.status||'CHALLENGER_ONLY';
+    const statusClass=gate.promotion_eligible?'good':'warn';
+    return `<article class="panel"><div class="panel-head"><div><span class="kicker">DECISION ENGINE V2 / CHALLENGER</span><h2>真正 Walk-forward OOS，而不是拿同一批歷史驗自己</h2><p class="sub">每個歷史預測只能使用當時已成熟的 outcome；pre-vintage 歷史仍承認 revision bias。v2 永遠不能自動覆蓋 v1。</p></div><span class="engine-badge ${statusClass}">${esc(status)}</span></div><div class="engine-grid"><div class="engine-card"><small>Effective Data Confidence</small><div class="big">${fmt(c.effective_data_confidence)}</div></div><div class="engine-card"><small>Sample-aware Model Confidence</small><div class="big">${fmt(c.sample_aware_model_confidence)}</div></div><div class="engine-card"><small>Regime similarity</small><div class="big">${fmt(c.regime_similarity)}</div></div><div class="engine-card"><small>Prospective outcomes</small><div class="big">${c.prospective_outcomes??0}</div></div></div><div class="table-wrap"><table class="engine-table"><thead><tr><th>Signal</th><th>Strict OOS 3M</th><th>Strict OOS 6M</th></tr></thead><tbody>${v2Rows(v2)}</tbody></table></div></article>
+      <div class="engine-layout"><article class="panel"><div class="panel-head"><div><span class="kicker">REAL-WORLD OUTCOME TARGETS</span><h2>不要只預測自己的 Score</h2><p class="sub">6M 對官方工業生產 YoY 與 NDC 股價指數 forward return 的歷史關聯；僅作 evidence，不等於報酬保證。</p></div></div><div class="table-wrap"><table class="engine-table"><thead><tr><th>Signal</th><th>Industrial Production</th><th>Stock Index Return</th></tr></thead><tbody>${outcomeRows(v2)}</tbody></table></div></article><article class="panel"><div class="panel-head"><div><span class="kicker">RISK BUDGET BACKTEST</span><h2>先證明 position-sizing 規則有價值</h2></div></div><div class="engine-grid"><div class="engine-card"><small>Observations</small><div class="big">${risk.observations??0}</div></div><div class="engine-card"><small>Policy scaled return</small><div class="big">${fmt(pv.policy_scaled_equity_return_pct)}%</div></div><div class="engine-card"><small>Static 60% return</small><div class="big">${fmt(pv.static_60_equity_return_pct)}%</div></div><div class="engine-card"><small>Policy max DD</small><div class="big">${fmt(pv.policy_max_drawdown_pct)}%</div></div></div><p class="engine-muted">Cash return 固定 0%、未含交易成本；這是 reconstructed diagnostic，不是可交易績效宣稱。</p></article></div>`;
+  }
+
+  function render(validation,structural,v2){
     const shell=document.querySelector('#decision-engine .engine-shell');
     if(!shell)return false;
     document.querySelector('#elephantValidationExtension')?.remove();
@@ -49,11 +80,12 @@
     node.id='elephantValidationExtension';
     node.className='validation-extension';
     node.innerHTML=`
+      ${v2Panel(v2)}
       <article class="panel"><div class="panel-head"><div><span class="kicker">MODEL VALIDATION EXTENSION</span><h2>分數真的有未來 information value 嗎？</h2><p class="sub">這裡測的是 Score(t) 與未來狀態的歷史關聯；使用目前修訂後官方序列，因此不是 point-in-time forecast performance。真正 prospective 校準仍由 Vintage DB + Decision Journal 累積。</p></div><span class="engine-badge warn">non-authoritative</span></div><div class="table-wrap"><table class="engine-table"><thead><tr><th>Signal</th><th>→ 3M</th><th>→ 6M</th></tr></thead><tbody>${validationRows(validation)}</tbody></table></div></article>
       <article class="panel"><div class="panel-head"><div><span class="kicker">UNCERTAINTY DECOMPOSITION</span><h2>不要把 Coverage 當 Confidence</h2><p class="sub">Coverage / Freshness / Signal Agreement / Historical Reliability 分開顯示。Provisional Overall 只做診斷，不取代 Decision Engine 三層 Confidence。</p></div></div><div class="table-wrap"><table class="engine-table"><thead><tr><th>Dimension</th><th>Coverage</th><th>Freshness</th><th>Agreement</th><th>Reliability</th><th>Provisional</th></tr></thead><tbody>${confidenceRows(validation)}</tbody></table></div></article>
       <div class="engine-layout"><article class="panel"><div class="panel-head"><div><span class="kicker">HISTORICAL ANALOGS</span><h2>3M / 6M Regime Cross-check</h2></div></div><div class="validation-analogs">${analogCards(validation)}</div></article><article class="panel"><div class="panel-head"><div><span class="kicker">REVERSE STRESS</span><h2>要壞到什麼程度才翻盤？</h2></div></div><div class="table-wrap"><table class="engine-table"><thead><tr><th>Dimension</th><th>Now</th><th>Uniform drop → 0</th><th>Single-component sensitivity</th></tr></thead><tbody>${stressRows(validation)}</tbody></table></div></article></div>
       <article class="panel"><div class="panel-head"><div><span class="kicker">STRUCTURAL LAYERS</span><h2>能算才算；證據不足就 Block</h2><p class="sub">Business Investment 使用既有官方 capex / machinery / credit。External Demand 與 Regional Vitality 在上游或 city-level evidence 不足時不硬湊分數。</p></div></div><div class="validation-layers">${Object.entries(layers).map(([k,x])=>layerCard(k,x)).join('')}</div></article>
-      <div class="engine-contract"><b>Evidence boundary：</b> Validation Extension 只能驗證與質疑模型；不能改 deterministic scores、Decision Engine forecast、Risk Budget 或 Alpha Buy Gate。</div>`;
+      <div class="engine-contract"><b>Evidence boundary：</b> v2 與 Validation Extension 只能驗證、質疑與提出 promotion evidence；不能改 deterministic scores、v1 Decision Engine forecast、Risk Budget、Capital OS 或 Alpha Buy Gate。</div>`;
     shell.appendChild(node);
     return true;
   }
@@ -62,12 +94,13 @@
     addStyle();
     try{
       const x=Date.now();
-      const [validation,structural]=await Promise.all([
+      const [validation,structural,v2]=await Promise.all([
         fetch(`data/model_validation.json?x=${x}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
-        fetch(`data/structural_layers.json?x=${x}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
+        fetch(`data/structural_layers.json?x=${x}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
+        fetch(`data/decision_engine_v2.json?x=${x}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
       ]);
-      if(render(validation,structural))return;
-      const obs=new MutationObserver(()=>{if(render(validation,structural))obs.disconnect()});
+      if(render(validation,structural,v2))return;
+      const obs=new MutationObserver(()=>{if(render(validation,structural,v2))obs.disconnect()});
       const root=document.querySelector('#decision-engine')||document.body;
       obs.observe(root,{childList:true,subtree:true});
       setTimeout(()=>obs.disconnect(),15000);
