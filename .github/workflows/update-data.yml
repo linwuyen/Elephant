@@ -46,41 +46,31 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Syntax check all pipelines
-        run: python -m py_compile scripts/*.py
+      - name: Run canonical official refresh pipeline
+        run: python scripts/run_official_refresh.py
 
-      - name: Fetch official sources and rebuild web data
-        run: python scripts/update_data.py
-
-      - name: Refresh public opportunity and security facts
+      - name: Rebuild once if main advanced during computation
+        shell: bash
         run: |
-          python scripts/source_opportunity.py
-          python scripts/source_security_facts.py
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          local_sha=$(git rev-parse HEAD)
+          remote_sha=$(git rev-parse origin/main)
+          if [ "$local_sha" != "$remote_sha" ]; then
+            echo "Main advanced during compute: $local_sha -> $remote_sha. Discarding stale outputs and rebuilding from latest main."
+            git reset --hard origin/main
+            python scripts/run_official_refresh.py
+          fi
 
-      - name: Build Capital Allocation OS
-        run: python scripts/refresh_capital.py
-
-      - name: Validate rebuilt data
+      - name: Commit only if writer base is still current
+        shell: bash
         run: |
-          python scripts/validate_data.py
-          python scripts/validate_decision_scores.py
-          python scripts/validate_model_validation.py
-          python scripts/validate_structural_layers.py
-          python scripts/test_model_validation.py
-          python scripts/test_source_supplements.py
-          python scripts/validate_intelligence_layer.py
-          python scripts/validate_investment.py
-          python scripts/test_investment_integration.py
-          python scripts/build_vintage.py --validate
-          python scripts/validate_decision_engine.py
-          python scripts/validate_capital_allocation.py
-          python scripts/test_capital_allocation.py
-          python scripts/validate_calibration.py
-          python scripts/validate_capital_v3.py
-          python scripts/test_capital_v3.py
-
-      - name: Commit refreshed data and heartbeat
-        run: |
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          local_sha=$(git rev-parse HEAD)
+          remote_sha=$(git rev-parse origin/main)
+          if [ "$local_sha" != "$remote_sha" ]; then
+            echo "Main advanced again after rebuild. Refusing to commit stale computed data."
+            exit 75
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/
@@ -88,8 +78,8 @@ jobs:
             echo 'No published data changes.'
           else
             git commit -m 'data: automated official refresh'
-            git fetch origin +refs/heads/main:refs/remotes/origin/main
-            git rebase origin/main
+            # Do not rebase a computed-data commit. If another writer wins this race,
+            # push must fail and a later run recomputes from the new canonical main.
             git push origin HEAD:main
           fi
 
