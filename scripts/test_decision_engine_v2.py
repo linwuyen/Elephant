@@ -64,4 +64,14 @@ assert gate['promotion_eligible'] is True
 assert gate['automatic_promotion'] is False
 assert gate['status']=='PROMOTION_ELIGIBLE_FOR_REVIEW'
 
+# If official market evidence is absent, the Risk Budget backtest is blocked and
+# promotion must remain impossible. Missing evidence never creates a proxy.
+macro_only={k:{'industrial_production_yoy':{'kind':'macro','horizons':{'6m':{'samples':30}}}} for k in v2.CORE_DIMS}
+blocked=v2.promotion_gate(wf,macro_only,{'status':'BLOCKED_NO_STOCK_INDEX','observations':0},journal)
+assert blocked['promotion_eligible'] is False
+assert blocked['automatic_promotion'] is False
+assert blocked['status']=='CHALLENGER_ONLY'
+assert blocked['gates']['external_outcomes_present'] is True
+assert blocked['gates']['risk_backtest_observations_at_least_36'] is False
+
 print('DECISION ENGINE V2 TEST PASS')
