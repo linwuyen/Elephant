@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import build_decision_scores as bds
 import source_inventory as si
 import source_supplements as ss
 
@@ -79,6 +80,46 @@ assert live['data'][0] == ['2025-05', 120.0]
 assert live['data'][-1] == ['2026-05', 132.0]
 assert live['layout'] == 'official_live_table'
 assert '製造業 total' in live['selection']
+
+# Score-consumption contract: once the canonical official manufacturing total
+# exists, a longer legacy inventory series must never outrank it.  This is the
+# exact production regression that previously left Growth Confidence at 85%.
+canonical_inventory = {
+    'name': '製造業 / 存貨指數',
+    'data': [['2025-05', 100.0], ['2026-05', 105.0]],
+}
+legacy_inventory = {
+    'name': '製造業 / 存貨價值（歷史候選）',
+    'data': [[f'{2020 + i // 12:04d}-{i % 12 + 1:02d}', 80.0 + i] for i in range(60)],
+}
+selector_inputs = {
+    'inventory.manufacturing_index': canonical_inventory,
+    'inventory.legacy_value': legacy_inventory,
+}
+assert bds.find_inventory(selector_inputs) is canonical_inventory
+
+score_inputs = {
+    'series': {
+        'orders.total': {
+            'name': '外銷訂單總額',
+            'data': [['2025-06', 100.0], ['2026-06', 120.0]],
+        },
+        'customs.exports_total': {
+            'name': '出口總值',
+            'data': [['2025-06', 100.0], ['2026-06', 115.0]],
+        },
+        **selector_inputs,
+    }
+}
+prod = {'data': [['2025-06', 100.0], ['2026-06', 110.0]]}
+sales = {'data': [['2025-05', 100.0], ['2026-05', 108.0]]}
+growth = bds.growth_score('2026-06', prod, sales, {}, score_inputs)
+assert growth is not None
+assert growth['confidence'] == 100
+assert {x['key'] for x in growth['components']} == {
+    'orders', 'exports', 'production', 'sales', 'inventory_balance'
+}
+assert next(x for x in growth['components'] if x['key'] == 'inventory_balance')['period'] == '2026-05'
 
 orders = monthly_rows(
     '資料期(民國年),貨品別,統計項目,統計值(美元)',
