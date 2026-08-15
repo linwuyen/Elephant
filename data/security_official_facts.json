@@ -1,0 +1,1 @@
+{"version":1,"updated_at":null,"facts":{},"source_health":{},"note":"Populated by scripts/source_security_facts.py from TWSE OpenAPI public-company monthly revenue, comprehensive income and balance-sheet endpoints. Empty seed is intentional; missing facts never pass a gate."}

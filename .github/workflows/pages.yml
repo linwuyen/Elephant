@@ -48,6 +48,7 @@ jobs:
         run: |
           node --check app.js
           node --check investment.js
+          node --check personal_capital.js
           node --check research.js
           node --check decision.js
           node --check intelligence.js
@@ -82,6 +83,8 @@ jobs:
           python scripts/validate_capital_allocation.py
           python scripts/test_capital_allocation.py
           python scripts/validate_calibration.py
+          python scripts/validate_capital_v3.py
+          python scripts/test_capital_v3.py
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -117,6 +120,8 @@ jobs:
           python scripts/validate_capital_allocation.py
           python scripts/test_capital_allocation.py
           python scripts/validate_calibration.py
+          python scripts/validate_capital_v3.py
+          python scripts/test_capital_v3.py
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_vintage.py --validate
           python scripts/validate_decision_engine.py
