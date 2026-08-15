@@ -18,6 +18,7 @@ import build_investment
 import build_vintage
 import build_decision_engine
 import build_decision_engine_v2
+import build_market_validation
 import revision_tracker
 import source_macro
 import source_moea
@@ -27,6 +28,7 @@ import source_ris
 import source_decision
 import source_ai_concentration
 import source_supplements
+import source_twse_market
 import source_alpha
 
 
@@ -51,6 +53,7 @@ def coverage(status):
     ndc = load_json('ndc.json', {})
     decision = load_json('decision_inputs.json', {})
     ai = load_json('ai_inputs.json', {})
+    market = load_json('market_inputs.json', {})
     rows = []
     for iid, s in macro.get('series', {}).items():
         d = s.get('data', [])
@@ -71,6 +74,9 @@ def coverage(status):
     for iid, s in ai.get('series', {}).items():
         d=s.get('data',[])
         rows.append({'source':'mof','dataset':'official.ai_concentration_inputs','indicator':iid,'name':s.get('name',iid),'frequency':'monthly','points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
+    for iid, s in market.get('series', {}).items():
+        d=s.get('data',[])
+        rows.append({'source':'twse','dataset':'twse.taiex_history','indicator':iid,'name':s.get('name',iid),'frequency':s.get('frequency','monthly'),'points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
     save_json('coverage.json', {'datasets': rows, 'source_status': status['sources']})
 
 
@@ -100,14 +106,12 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 15,
+        'pipeline_version': 16,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
-    # Critical MOEA sales now comes from data.gov dataset metadata -> official MOEA
-    # CSV/ZIP resource. The mutable ASP.NET presentation page is not a data contract.
     source_moea.live_sales_index = source_moea_dataset.sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
@@ -115,9 +119,10 @@ def main():
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
-    # Inventory total uses data.gov dataset 109753 and resolves the first-party resource
-    # dynamically. It never synthesizes a manufacturing total from sub-industries.
     refresh_source(status, bad, 'inventory_manufacturing', source_moea_dataset.update_inventory, a.offline_dir, False)
+    # Independent market outcome evidence. It never feeds the economic Scores and
+    # is noncritical to v1; v2 simply remains evidence-blocked if TWSE is unavailable.
+    refresh_source(status, bad, 'twse_market', source_twse_market.update, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
@@ -136,11 +141,11 @@ def main():
     build_structural_layers.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
-    # v1 remains authoritative. v2 is generated strictly downstream as a
-    # challenger/validation artifact and has no write path back into scores,
-    # Risk Budget, Alpha actions, or portfolio policy.
     build_decision_engine.generate(append_journal=True)
     build_decision_engine_v2.generate()
+    # Market outcome evidence is injected only after the core challenger exists.
+    # This extension cannot write back into v1 or any Score/Alpha authority.
+    build_market_validation.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
