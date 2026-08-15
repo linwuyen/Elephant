@@ -18,7 +18,7 @@ import build_investment
 import build_vintage
 import build_decision_engine
 import build_decision_engine_v2
-import build_risk_budget_v2
+import build_risk_budget_v2_availability
 import revision_tracker
 import source_macro
 import source_moea
@@ -29,6 +29,7 @@ import source_decision
 import source_ai_concentration
 import source_supplements
 import source_alpha
+import source_twse_market_live
 
 
 def segis(offline=False):
@@ -101,23 +102,23 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 16,
+        'pipeline_version': 17,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
-    # Critical MOEA sales comes from data.gov dataset metadata -> official MOEA
-    # CSV/ZIP resource. The mutable ASP.NET presentation page is not a data contract.
     source_moea.live_sales_index = source_moea_dataset.sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
+    # TWSE is current-market freshness evidence for Risk Budget v2 only. v1 stays
+    # authoritative, so a transient TWSE outage must block the challenger current
+    # recommendation rather than degrade the production economic pipeline.
+    refresh_source(status, bad, 'market_live', source_twse_market_live.update, a.offline_dir, False)
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
-    # Inventory total uses data.gov dataset 109753 and resolves the first-party resource
-    # dynamically. It never synthesizes a manufacturing total from sub-industries.
     refresh_source(status, bad, 'inventory_manufacturing', source_moea_dataset.update_inventory, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
@@ -137,12 +138,9 @@ def main():
     build_structural_layers.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
-    # v1 remains authoritative. Decision Engine v2 and Risk Budget v2 are generated
-    # strictly downstream as challenger/validation artifacts and have no write path
-    # back into Scores, v1 Risk Budget, Alpha, Constitution, Capital OS or execution.
     build_decision_engine.generate(append_journal=True)
     build_decision_engine_v2.generate()
-    build_risk_budget_v2.generate()
+    build_risk_budget_v2_availability.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 

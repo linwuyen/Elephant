@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess,sys
 
 COMMANDS=[
- ['python','-m','py_compile','scripts/common.py','scripts/update_data.py','scripts/source_opportunity.py','scripts/source_security_facts.py','scripts/source_moea_dataset.py','scripts/refresh_capital.py','scripts/build_risk_budget_v2.py'],
+ ['python','-m','py_compile','scripts/common.py','scripts/update_data.py','scripts/source_opportunity.py','scripts/source_security_facts.py','scripts/source_moea_dataset.py','scripts/source_twse_market_live.py','scripts/refresh_capital.py','scripts/build_risk_budget_v2.py','scripts/build_risk_budget_v2_availability.py'],
  ['python','scripts/update_data.py'],
  ['python','scripts/source_opportunity.py'],
  ['python','scripts/source_security_facts.py'],
@@ -16,6 +16,7 @@ COMMANDS=[
  ['python','scripts/test_source_supplements.py'],
  ['python','scripts/test_moea_dataset.py'],
  ['python','scripts/test_ndc_zip_selection.py'],
+ ['python','scripts/test_twse_market_live.py'],
  ['python','scripts/validate_intelligence_layer.py'],
  ['python','scripts/validate_investment.py'],
  ['python','scripts/test_investment_integration.py'],
@@ -25,6 +26,7 @@ COMMANDS=[
  ['python','scripts/test_decision_engine_v2.py'],
  ['python','scripts/validate_risk_budget_v2.py'],
  ['python','scripts/test_risk_budget_v2.py'],
+ ['python','scripts/test_risk_budget_v2_availability.py'],
  ['python','scripts/validate_capital_allocation.py'],
  ['python','scripts/test_capital_allocation.py'],
  ['python','scripts/validate_calibration.py'],

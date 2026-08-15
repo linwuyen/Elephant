@@ -38,6 +38,11 @@ def main():
     assert float(lo) <= neutral <= float(hi)
     assert float(model.get('max_monthly_change_pct_points')) > 0
 
+    # v2.1 publication-availability contract is now part of the published model.
+    assert int(model.get('score_availability_lag_months')) == 2
+    assert model.get('historical_market_source') == 'NDC stock_index'
+    assert model.get('current_market_source') == 'TWSE completed-month TAIEX'
+
     current = obj.get('current') or {}
     assert current.get('status') in (
         'READY', 'BLOCKED_MISSING_CURRENT_SCORE', 'BLOCKED_NO_CURRENT_MARKET',
@@ -50,6 +55,10 @@ def main():
         assert 0 <= float(current['allocation_score']) <= 100
         assert 0 <= float(current['evidence_confidence']) <= 100
         assert float(lo) <= float(current['target_equity_pct']) <= float(hi)
+        assert current.get('market_source') == 'TWSE live completed-month window'
+        assert int(current.get('market_freshness_gap_months')) in (0, 1)
+        assert int(current.get('score_availability_lag_months')) >= 2
+        assert str(current.get('score_period')) <= str(current.get('period'))
         env = current.get('allocation_envelope') or {}
         assert finite(env.get('equity_risk_budget_review_pct'))
         assert finite(env.get('cash_or_low_risk_reserve_review_pct'))
@@ -62,6 +71,7 @@ def main():
     if bt.get('status') == 'DIAGNOSTIC_ONLY':
         assert bt.get('authority') is False
         assert int(bt.get('months') or 0) > 0
+        assert int(bt.get('score_availability_lag_months')) == 2
         assert bt.get('strict_walk_forward_leakage_guard_verified') is True
         assert float(bt.get('max_realized_monthly_equity_change_pct_points')) <= float(model['max_monthly_change_pct_points']) + 1e-9
         costs = bt.get('cost_sensitivity') or {}
@@ -91,8 +101,14 @@ def main():
     else:
         assert gate.get('status') == 'CHALLENGER_ONLY'
 
+    boundary = obj.get('evidence_boundary') or {}
+    assert 'two months' in str(boundary.get('historical_availability'))
+    assert 'TWSE' in str(boundary.get('current_market_freshness'))
+    assert 'NDC' in str(boundary.get('source_roles')) and 'TWSE' in str(boundary.get('source_roles'))
+
     print('RISK BUDGET V2 VALIDATION PASS')
     print('current:', current.get('status'), current.get('target_equity_pct'))
+    print('score/market periods:', current.get('score_period'), current.get('period'))
     print('oos months:', bt.get('months'))
     print('promotion:', gate.get('status'))
 
