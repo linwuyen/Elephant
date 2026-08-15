@@ -69,6 +69,7 @@ jobs:
         run: |
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
+          python scripts/build_market_validation.py
       - name: Validate published contracts
         run: |
           python scripts/validate_data.py
@@ -80,6 +81,8 @@ jobs:
           python scripts/test_moea_live_tables.py
           python scripts/test_moea_dataset.py
           python scripts/test_ndc_zip_selection.py
+          python scripts/test_twse_market.py
+          python scripts/test_market_validation.py
           python scripts/validate_intelligence_layer.py
           python scripts/validate_investment.py
           python scripts/test_investment_integration.py
@@ -121,6 +124,8 @@ jobs:
           python scripts/test_moea_live_tables.py
           python scripts/test_moea_dataset.py
           python scripts/test_ndc_zip_selection.py
+          python scripts/test_twse_market.py
+          python scripts/test_market_validation.py
           python scripts/validate_intelligence_layer.py
       - name: Build latest investment, Capital OS and Decision Engine layers for Pages artifact
         run: |
@@ -134,6 +139,7 @@ jobs:
           python scripts/test_capital_v3.py
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
+          python scripts/build_market_validation.py
           python scripts/build_vintage.py --validate
           python scripts/validate_decision_engine.py
           python scripts/validate_decision_engine_v2.py
