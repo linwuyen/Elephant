@@ -54,6 +54,7 @@ jobs:
           node --check intelligence.js
           node --check decision_engine.js
           node --check decision_validation.js
+          node --check validation_os.js
           python -m py_compile scripts/*.py
       - name: Rebuild derived decision intelligence in validation workspace
         run: |
@@ -70,6 +71,7 @@ jobs:
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
           python scripts/build_risk_budget_v2_availability.py
+          python scripts/build_validation_os.py --no-journal
       - name: Validate published contracts
         run: |
           python scripts/validate_data.py
@@ -92,6 +94,8 @@ jobs:
           python scripts/validate_risk_budget_v2.py
           python scripts/test_risk_budget_v2.py
           python scripts/test_risk_budget_v2_availability.py
+          python scripts/validate_validation_os.py
+          python scripts/test_validation_os.py
           python scripts/validate_capital_allocation.py
           python scripts/test_capital_allocation.py
           python scripts/validate_calibration.py
@@ -141,6 +145,7 @@ jobs:
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
           python scripts/build_risk_budget_v2_availability.py
+          python scripts/build_validation_os.py --no-journal
           python scripts/build_vintage.py --validate
           python scripts/validate_decision_engine.py
           python scripts/validate_decision_engine_v2.py
@@ -148,6 +153,8 @@ jobs:
           python scripts/validate_risk_budget_v2.py
           python scripts/test_risk_budget_v2.py
           python scripts/test_risk_budget_v2_availability.py
+          python scripts/validate_validation_os.py
+          python scripts/test_validation_os.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
