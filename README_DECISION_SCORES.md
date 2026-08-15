@@ -25,6 +25,8 @@ Elephant 的首頁核心不是單一總分，而是四層診斷：
 
 用途不是判斷「目前很強」，而是檢查訂單是否真的轉成出口與生產、生產是否有銷售支撐，以及庫存是否開始堆積。
 
+庫存優先使用經濟部統計處官方「製造業存貨量指數－按四大行業別分」中的製造業總體序列。source parser 同時接受官方 long-form 與防禦性的 wide/transposed export layout，但三種 layout 都必須解析到同一個 **製造業存貨量指數**；不得改用房市庫存、存貨率或其他不同概念來補 coverage。
+
 ## Domestic Demand
 
 分析鏈：
@@ -42,6 +44,8 @@ Elephant 的首頁核心不是單一總分，而是四層診斷：
 信用卡資料使用金管會銀行局公開、由聯合信用卡處理中心提供的月資料。它只涵蓋聯卡中心處理的信用卡消費交易，因此在 Elephant 中明確視為 **consumer-spending proxy**，不是所有民間消費或所有支付行為。
 
 為降低通膨把名目消費放大的問題，信用卡 component 優先使用「簽帳金額 YoY - CPI YoY」；實質薪資則使用薪資 YoY - CPI YoY。
+
+薪資與就業的 primary source 是主計總處（DGBAS）官方 XML：工業及服務業每人每月總薪資、工業及服務業受僱員工人數。若 `ws.dgbas.gov.tw` 的 XML transport 因憑證鏈或上游連線問題不可用，supplement 只允許 fallback 到 **`www.dgbas.gov.tw` 官方「薪資與生產力統計」月報標題**，抽取同一月份的「工業及服務業受僱員工人數」與「本月總薪資平均」。這是同一官方、同一指標語義的 alternate publication path，不得替換成失業率、總就業人口或其他 proxy。TLS verification 始終開啟，禁止 `-k` / `verify=False`。
 
 ## Financial Conditions
 
@@ -70,6 +74,7 @@ Elephant 的首頁核心不是單一總分，而是四層診斷：
 - 缺值只能重新正規化可用權重並降低 Confidence，不得補 0。
 - validator 會鎖住固定 component set，避免模型定義在未察覺下漂移。
 - 原始資料下載失敗時保留 last-good；不得讓 HTML、欄位漂移或錯 period 覆蓋健康資料。
+- alternate publication path 必須保持 **同一提供機關、同一指標定義、同一頻率/期間語義**；不符合者只能降 Confidence，不能當 fallback。
 
 ## 下一層
 
