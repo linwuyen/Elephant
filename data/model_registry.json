@@ -1,11 +1,11 @@
 {
-  "model_version": "capital-v3.0.1",
+  "model_version": "capital-v3.0.2",
   "schema_version": 1,
   "objective": "maximize long-run after-cost geometric return subject to liquidity, concentration and forced-sale constraints",
   "benchmark_models": {
     "2330": {"method":"upstream_scenario_valuation","authority":"ALPHA_ENGINE"},
     "TAIWAN_BROAD": {"method":"earnings_yield_plus_sustainable_nominal_growth","proxy":"0050","sustainable_nominal_growth_pct":4.0,"max_fact_age_days":120,"authority":"MODEL_ASSUMPTION"},
-    "GLOBAL_EQUITY": {"method":"earnings_yield_plus_sustainable_nominal_growth","proxy":"VT","sustainable_nominal_growth_pct":4.0,"max_fact_age_days":120,"authority":"MODEL_ASSUMPTION"},
+    "GLOBAL_EQUITY": {"method":"earnings_yield_plus_sustainable_nominal_growth","proxy":"ACWI","sustainable_nominal_growth_pct":4.0,"max_fact_age_days":120,"authority":"MODEL_ASSUMPTION"},
     "CASH": {"method":"cbc_discount_rate_proxy","max_fact_age_days":120,"authority":"FIRST_PARTY_RATE_PROXY"},
     "DEBT_REPAYMENT": {"method":"user_effective_rate","storage":"BROWSER_LOCAL_ONLY","authority":"PRIVATE_INPUT"}
   },
