@@ -88,6 +88,12 @@
     document.head.appendChild(s);
   }
 
+  if(!document.querySelector('script[data-elephant-validation-os]')){
+    const s=document.createElement('script');
+    s.src='validation_os.js'; s.defer=true; s.dataset.elephantValidationOs='1';
+    document.head.appendChild(s);
+  }
+
   // Capital v3 is a browser-local private optimizer. It consumes only public model
   // artifacts; personal holdings/debt never enter GitHub or any server workflow.
   if(!document.querySelector('script[data-elephant-personal-capital]')){
