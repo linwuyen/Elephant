@@ -51,6 +51,7 @@ jobs:
           node --check research.js
           node --check decision.js
           node --check intelligence.js
+          node --check decision_engine.js
           python -m py_compile scripts/*.py
       - name: Rebuild derived decision intelligence in validation workspace
         run: |
@@ -58,6 +59,8 @@ jobs:
           python scripts/build_intelligence_layer.py
       - name: Refresh Alpha integration in validation workspace
         run: python scripts/refresh_investment.py
+      - name: Rebuild Decision Engine without mutating journal
+        run: python scripts/build_decision_engine.py --no-journal
       - name: Validate published contracts
         run: |
           python scripts/validate_data.py
@@ -65,6 +68,8 @@ jobs:
           python scripts/validate_intelligence_layer.py
           python scripts/validate_investment.py
           python scripts/test_investment_integration.py
+          python scripts/build_vintage.py --validate
+          python scripts/validate_decision_engine.py
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -86,10 +91,13 @@ jobs:
           python scripts/build_intelligence_layer.py
           python scripts/validate_decision_scores.py
           python scripts/validate_intelligence_layer.py
-      - name: Build latest investment layer for Pages artifact
+      - name: Build latest investment and Decision Engine layers for Pages artifact
         run: |
           python scripts/refresh_investment.py
           python scripts/validate_investment.py
+          python scripts/build_decision_engine.py --no-journal
+          python scripts/build_vintage.py --validate
+          python scripts/validate_decision_engine.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
