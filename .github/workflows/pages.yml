@@ -69,6 +69,7 @@ jobs:
         run: |
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
+          python scripts/build_risk_budget_v2.py
       - name: Validate published contracts
         run: |
           python scripts/validate_data.py
@@ -87,6 +88,8 @@ jobs:
           python scripts/validate_decision_engine.py
           python scripts/validate_decision_engine_v2.py
           python scripts/test_decision_engine_v2.py
+          python scripts/validate_risk_budget_v2.py
+          python scripts/test_risk_budget_v2.py
           python scripts/validate_capital_allocation.py
           python scripts/test_capital_allocation.py
           python scripts/validate_calibration.py
@@ -134,10 +137,13 @@ jobs:
           python scripts/test_capital_v3.py
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
+          python scripts/build_risk_budget_v2.py
           python scripts/build_vintage.py --validate
           python scripts/validate_decision_engine.py
           python scripts/validate_decision_engine_v2.py
           python scripts/test_decision_engine_v2.py
+          python scripts/validate_risk_budget_v2.py
+          python scripts/test_risk_budget_v2.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact

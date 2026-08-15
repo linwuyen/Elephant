@@ -18,6 +18,7 @@ import build_investment
 import build_vintage
 import build_decision_engine
 import build_decision_engine_v2
+import build_risk_budget_v2
 import revision_tracker
 import source_macro
 import source_moea
@@ -32,7 +33,7 @@ import source_alpha
 
 def segis(offline=False):
     if offline:
-        return {'status': 'blocked', 'latest_period': None, 'message': 'SEGIS 未使用測試快照；不產生假資料。', 'source_url': URLS['segis_catalog']}
+        return {'status': 'blocked', 'latest_period': None, 'message': 'SEGIS 鄉鎮市區工商家數欄位已註冊；未使用測試快照，不產生假資料。', 'source_url': URLS['segis_catalog']}
     msg = 'SEGIS 鄉鎮市區工商家數欄位已註冊；未取得穩定可重現公開直鏈或 APP ID/API Key 前不自動寫入。'
     found = None
     try:
@@ -100,13 +101,13 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 15,
+        'pipeline_version': 16,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
-    # Critical MOEA sales now comes from data.gov dataset metadata -> official MOEA
+    # Critical MOEA sales comes from data.gov dataset metadata -> official MOEA
     # CSV/ZIP resource. The mutable ASP.NET presentation page is not a data contract.
     source_moea.live_sales_index = source_moea_dataset.sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
@@ -136,11 +137,12 @@ def main():
     build_structural_layers.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
-    # v1 remains authoritative. v2 is generated strictly downstream as a
-    # challenger/validation artifact and has no write path back into scores,
-    # Risk Budget, Alpha actions, or portfolio policy.
+    # v1 remains authoritative. Decision Engine v2 and Risk Budget v2 are generated
+    # strictly downstream as challenger/validation artifacts and have no write path
+    # back into Scores, v1 Risk Budget, Alpha, Constitution, Capital OS or execution.
     build_decision_engine.generate(append_journal=True)
     build_decision_engine_v2.generate()
+    build_risk_budget_v2.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
