@@ -10,6 +10,7 @@ on:
       - 'scripts/sync_consultant_research.py'
       - 'scripts/build_intelligence_layer.py'
       - 'scripts/build_ai_concentration.py'
+      - 'scripts/build_decision_engine.py'
       - 'scripts/validate_intelligence_layer.py'
       - '.github/workflows/update-research.yml'
 
@@ -68,10 +69,11 @@ jobs:
           print('Consultant research integration PASS:', status['reports'], 'reports', companies)
           PY
 
-      - name: Rebuild cross-source intelligence
+      - name: Rebuild cross-source intelligence and research claims
         run: |
           python scripts/build_ai_concentration.py
           python scripts/build_intelligence_layer.py
+          python scripts/build_decision_engine.py --no-journal
           python scripts/validate_decision_scores.py
           python scripts/validate_intelligence_layer.py
 
@@ -80,12 +82,12 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/consultant/ data/intelligence_layer.json data/decision_scores.json data/summary.json
+          git add data/consultant/ data/intelligence_layer.json data/decision_scores.json data/summary.json data/research_claims.json data/forecast.json data/risk_budget.json data/decision_engine.json
           if git diff --cached --quiet; then
             echo 'No research or intelligence changes.'
             exit 0
           fi
-          git commit -m 'data: sync consultant research and intelligence'
+          git commit -m 'data: sync consultant research and decision intelligence'
           git push origin HEAD:main
 
       - name: Deploy refreshed research
