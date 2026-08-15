@@ -20,13 +20,12 @@ import build_decision_engine
 import revision_tracker
 import source_macro
 import source_moea
-import source_moea_live_tables
+import source_moea_dataset
 import source_ndc
 import source_ris
 import source_decision
 import source_ai_concentration
 import source_supplements
-import source_inventory
 import source_alpha
 
 
@@ -100,24 +99,24 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 13,
+        'pipeline_version': 14,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
-    # Production MOEA sales parsing is injected structurally: the official table's
-    # row/column contract is authoritative, not mutable page-title wording.
-    source_moea.live_sales_index = source_moea_live_tables.live_sales_index
+    # Critical MOEA sales now comes from data.gov dataset metadata -> official MOEA
+    # CSV/ZIP resource. The mutable ASP.NET presentation page is not a data contract.
+    source_moea.live_sales_index = source_moea_dataset.sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
-    # Consume MOEA's explicitly published 製造業 total from the same structure-based
-    # live-table contract; no synthetic sum of sub-industries and no title signature.
-    refresh_source(status, bad, 'inventory_manufacturing', source_moea_live_tables.update_inventory, a.offline_dir, False)
+    # Inventory total uses data.gov dataset 109753 and resolves the first-party resource
+    # dynamically. It never synthesizes a manufacturing total from sub-industries.
+    refresh_source(status, bad, 'inventory_manufacturing', source_moea_dataset.update_inventory, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
