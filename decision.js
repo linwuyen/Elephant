@@ -85,4 +85,12 @@
     s.src='decision_engine.js'; s.defer=true; s.dataset.elephantDecisionEngine='1';
     document.head.appendChild(s);
   }
+
+  // Validation is a separate non-authoritative observer. It may challenge model
+  // assumptions and expose evidence gaps, but it cannot change scores or forecasts.
+  if(!document.querySelector('script[data-elephant-validation]')){
+    const s=document.createElement('script');
+    s.src='decision_validation.js'; s.defer=true; s.dataset.elephantValidation='1';
+    document.head.appendChild(s);
+  }
 })();

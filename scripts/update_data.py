@@ -11,6 +11,8 @@ import build_summary
 import build_history
 import build_decision_scores
 import build_ai_concentration
+import build_model_validation
+import build_structural_layers
 import build_intelligence_layer
 import build_investment
 import build_vintage
@@ -22,6 +24,7 @@ import source_ndc
 import source_ris
 import source_decision
 import source_ai_concentration
+import source_supplements
 import source_alpha
 
 def segis(offline=False):
@@ -91,7 +94,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 10,
+        'pipeline_version': 11,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -100,12 +103,11 @@ def main():
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
-    # Supplemental direct official inputs. Scores remain usable through NDC fallbacks if one download drifts.
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
-    # AI concentration uses a separate MOF commodity-export table. Failure lowers
-    # score confidence but never contaminates the core macro pipeline.
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
-    # Alpha is an independent investment layer. Failure never contaminates macro scores or creates a BUY.
+    # Enrich only missing decision-critical series using current official endpoints.
+    # The curl fallback still verifies TLS; certificate verification is never disabled.
+    refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
@@ -115,14 +117,18 @@ def main():
     coverage(status)
     revision_tracker.record(before, now)
 
-    # Capture what was actually observable in this run before deriving new scores.
-    # This is the prospective point-in-time store used to prevent look-ahead bias.
+    # Capture what was actually observable after all official-source supplements,
+    # before deriving new scores. This preserves point-in-time provenance.
     build_vintage.capture(now)
 
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
     build_ai_concentration.generate()
+    # Non-authoritative validation diagnostics and evidence-gated structural layers.
+    # These cannot overwrite the existing Decision Engine forecast/decision authority.
+    build_model_validation.generate()
+    build_structural_layers.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
     build_decision_engine.generate(append_journal=True)
