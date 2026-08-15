@@ -26,6 +26,12 @@ def _year_month_rows(rows):
   month=int(re.sub(r'\D','',row[mi]));vals=[v for v in (num(c) for c in row[mi+1:]) if v is not None]
   if vals:yield current_year,month,vals
 
+def _month_gap(newer,older):
+ try:
+  ny,nm=map(int,str(newer).split('-'));oy,om=map(int,str(older).split('-'))
+ except Exception:return 999
+ return (ny-oy)*12+(nm-om)
+
 def parse_sales(body,min_observations=5):
  rows=_rows(body);series={k:{'name':name,'data':[]} for k,(pos,name) in SALES_POS.items()}
  for year,month,vals in _year_month_rows(rows):
@@ -51,7 +57,19 @@ def parse_inventory(body,min_observations=13):
  return {'name':'製造業 / 存貨指數','unit':'index_2021_100','data':data,'selection':'MOEA current statistics table / 製造業 total (first published series)','layout':'official_live_table_structural','catalog':INVENTORY_CATALOG,'source_url':INVENTORY_URL}
 
 def update_inventory(_offline=None):
- if _offline:return {'latest_period':load_json('decision_inputs.json',{}).get('latest_period'),'rows':0,'message':'inventory live source skipped in offline mode'}
- incoming=parse_inventory(request_bytes(INVENTORY_URL,60,3)[0]);obj=load_json('decision_inputs.json',{'series':{},'catalogs':{}});series=dict(obj.get('series',{}));series['inventory.manufacturing_index']=incoming;obj['series']=series;cats=dict(obj.get('catalogs',{}));cats['inventory_manufacturing_live']=INVENTORY_CATALOG;obj['catalogs']=cats;obj['latest_period']=max((s['data'][-1][0] for s in series.values() if s.get('data')),key=period_key,default=obj.get('latest_period'));notes=list(obj.get('supplement_notes',[]));note='MOEA manufacturing total inventory index is parsed structurally from the official current-statistics table; page-title wording is not used as a data contract.'
+ obj=load_json('decision_inputs.json',{'series':{},'catalogs':{}})
+ if _offline:return {'latest_period':obj.get('latest_period'),'rows':0,'message':'inventory live source skipped in offline mode'}
+ try:
+  incoming=parse_inventory(request_bytes(INVENTORY_URL,60,3)[0])
+ except Exception as e:
+  existing=obj.get('series',{}).get('inventory.manufacturing_index',{})
+  data=existing.get('data',[])
+  inv_period=str(data[-1][0]) if data else None
+  as_of=obj.get('latest_period')
+  gap=_month_gap(as_of,inv_period) if as_of and inv_period else 999
+  if data and 0<=gap<=2:
+   return {'latest_period':inv_period,'rows':len(data),'message':f'MOEA inventory HTML transport unavailable; retained last-good official manufacturing-total index {inv_period} within {gap}-month freshness window ({type(e).__name__}: {e})','warnings':[f'live inventory transport unavailable; last-good official series retained within freshness window ({type(e).__name__})']}
+  raise
+ series=dict(obj.get('series',{}));series['inventory.manufacturing_index']=incoming;obj['series']=series;cats=dict(obj.get('catalogs',{}));cats['inventory_manufacturing_live']=INVENTORY_CATALOG;obj['catalogs']=cats;obj['latest_period']=max((s['data'][-1][0] for s in series.values() if s.get('data')),key=period_key,default=obj.get('latest_period'));notes=list(obj.get('supplement_notes',[]));note='MOEA manufacturing total inventory index is parsed structurally from the official current-statistics table; page-title wording is not used as a data contract.'
  if note not in notes:notes.append(note)
  obj['supplement_notes']=notes[-20:];save_json('decision_inputs.json',obj);return {'latest_period':incoming['data'][-1][0],'rows':len(incoming['data']),'message':'MOEA manufacturing inventory refreshed from structural live-table parser'}
