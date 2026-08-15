@@ -1,0 +1,71 @@
+name: Capital source smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 5 * * 1-5' # 13:35 Asia/Taipei weekdays
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/source_opportunity.py'
+      - 'scripts/source_security_facts.py'
+      - 'scripts/build_opportunity_models.py'
+      - 'scripts/build_security_fact_store.py'
+      - '.github/workflows/capital-source-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/source_opportunity.py'
+      - 'scripts/source_security_facts.py'
+      - 'scripts/build_opportunity_models.py'
+      - 'scripts/build_security_fact_store.py'
+      - '.github/workflows/capital-source-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax
+        run: python -m py_compile scripts/source_opportunity.py scripts/source_security_facts.py scripts/build_opportunity_models.py scripts/build_security_fact_store.py
+      - name: Fetch live capital sources in workspace only
+        run: |
+          python scripts/source_opportunity.py
+          python scripts/source_security_facts.py
+          python scripts/build_opportunity_models.py
+          python scripts/build_security_fact_store.py
+      - name: Enforce live coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          sec=json.loads(Path('data/security_official_facts.json').read_text(encoding='utf-8'))
+          cov=sec.get('coverage') or {}
+          assert cov.get('target_count',0) >= 10, cov
+          assert cov.get('covered_tickers') == cov.get('target_count'), cov
+          assert cov.get('tpex_target_count',0) > 0, cov
+          assert cov.get('tpex_income_covered',0) > 0, cov
+          assert cov.get('tpex_balance_covered',0) > 0, cov
+
+          opp=json.loads(Path('data/opportunity_inputs.json').read_text(encoding='utf-8'))
+          public={x['id']:x for x in opp.get('alternatives',[]) if x.get('id')!='DEBT_REPAYMENT'}
+          for k in ('2330','TAIWAN_BROAD','GLOBAL_EQUITY','CASH'):
+              assert k in public, (k, public)
+          assert opp.get('public_available_count',0) >= 4, opp
+
+          store=json.loads(Path('data/security_fact_store.json').read_text(encoding='utf-8'))
+          assert store.get('version',0) >= 3
+          for row in store.get('securities',[]):
+              comp=row.get('research_completeness') or {}
+              if comp.get('cash_flow_status')=='MISSING_DEDICATED_CASH_FLOW_EVIDENCE':
+                  assert 'balance_sheet_cash_flow' in (comp.get('missing') or []), row.get('ticker')
+          print('CAPITAL SOURCE SMOKE PASS', cov)
+          PY
