@@ -21,12 +21,13 @@ permissions:
   actions: write
 
 concurrency:
-  group: elephant-data-writers
+  group: elephant-data-writers-v2
   cancel-in-progress: false
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
