@@ -5,7 +5,7 @@ from common import TZ, request_bytes, decode_text, save_json, load_json
 
 SOURCES={
  'TAIWAN_BROAD':{'name':'0050 / FTSE TWSE Taiwan 50 proxy','url':'https://www.yuantaetfs.com/product/detail/0050/Basic_information','kind':'EQUITY_PE','max_age_days':120},
- 'GLOBAL_EQUITY':{'name':'Vanguard Total World Stock ETF (VT)','url':'https://investor.vanguard.com/investment-products/etfs/profile/vt','kind':'EQUITY_PE','max_age_days':120},
+ 'GLOBAL_EQUITY':{'name':'iShares MSCI ACWI ETF (ACWI)','url':'https://www.ishares.com/us/products/239600/ishares-msci-acwi-etf','kind':'EQUITY_PE','max_age_days':120},
  'CASH':{'name':'CBC discount-rate proxy','url':'https://www.cbc.gov.tw/en/cp-448-192435-024f3-2.html','kind':'RATE','max_age_days':120},
 }
 
@@ -25,24 +25,25 @@ def date_norm(s):
 def parse_0050(text):
  candidates=(plain(text),raw_normalized(text));pe=asof=None
  for t in candidates:
-  m=re.search(r'(20\d{2}/\d{2}/\d{2}).{0,1200}?(?:本益比|P/?E(?:\s*ratio)?)\D{0,80}?([0-9]+(?:\.[0-9]+)?)',t,re.I|re.S)
+  m=re.search(r'(20\d{2}/\d{2}/\d{2}).{0,1600}?(?:本益比|P/?E(?:\s*Ratio)?)\D{0,120}?([0-9]+(?:\.[0-9]+)?)',t,re.I|re.S)
   if m:asof=date_norm(m.group(1));pe=float(m.group(2));break
-  m=re.search(r'(?:本益比|P/?E(?:\s*ratio)?)\D{0,120}?([0-9]+(?:\.[0-9]+)?)',t,re.I|re.S)
+  m=re.search(r'(?:本益比|P/?E(?:\s*Ratio)?)\D{0,160}?([0-9]+(?:\.[0-9]+)?)',t,re.I|re.S)
   if m:pe=float(m.group(1));break
  if pe is None or not 3<=pe<=100:raise ValueError('0050 PE not found/plausible')
  return {'pe':round(pe,4),'as_of':asof}
 
-def parse_vt(text):
+def parse_acwi(text):
  candidates=(plain(text),raw_normalized(text));pe=asof=None
  for t in candidates:
-  md=re.search(r'Characteristics.{0,80}?as\s+of\s+(\d{2}/\d{2}/20\d{2})',t,re.I|re.S)
-  if md:asof=date_norm(md.group(1))
-  pats=(r'P\s*/\s*E\s+ratio\D{0,160}?([0-9]+(?:\.[0-9]+)?)\s*x?',r'P/E\s*ratio.{0,400}?(?:value|displayValue|fundValue)["\s:=\\]+([0-9]+(?:\.[0-9]+)?)',r'(?:label|name)["\s:=\\]+P/E\s*ratio.{0,500}?([0-9]+(?:\.[0-9]+)?)\s*x?')
-  for p in pats:
-   mp=re.search(p,t,re.I|re.S)
-   if mp:pe=float(mp.group(1));break
-  if pe is not None:break
- if pe is None or not 3<=pe<=100:raise ValueError('VT PE not found/plausible in visible or serialized characteristics')
+  # iShares exposes Portfolio Characteristics as visible server-rendered text. Accept
+  # both orders: date near the P/E block or P/E followed by an "as of" date.
+  m=re.search(r'P\s*/\s*E\s*Ratio\D{0,120}?([0-9]+(?:\.[0-9]+)?).{0,180}?as\s+of\s+([A-Za-z]{3,9}\s+\d{1,2},\s+20\d{2})',t,re.I|re.S)
+  if m:pe=float(m.group(1));asof=date_norm(m.group(2));break
+  m=re.search(r'as\s+of\s+([A-Za-z]{3,9}\s+\d{1,2},\s+20\d{2}).{0,500}?P\s*/\s*E\s*Ratio\D{0,120}?([0-9]+(?:\.[0-9]+)?)',t,re.I|re.S)
+  if m:asof=date_norm(m.group(1));pe=float(m.group(2));break
+  m=re.search(r'P\s*/\s*E\s*Ratio\D{0,120}?([0-9]+(?:\.[0-9]+)?)',t,re.I|re.S)
+  if m:pe=float(m.group(1));break
+ if pe is None or not 3<=pe<=100:raise ValueError('ACWI PE not found/plausible')
  return {'pe':round(pe,4),'as_of':asof}
 
 def parse_cbc(text):
@@ -54,7 +55,7 @@ def parse_cbc(text):
  md=re.search(r'(?:Release Date|Date)[:\s]+([A-Za-z]+\s+\d{1,2},\s+20\d{2})',t,re.I)
  return {'rate_pct':round(rate,4),'as_of':date_norm(md.group(1)) if md else None}
 
-def parse(key,text):return {'TAIWAN_BROAD':parse_0050,'GLOBAL_EQUITY':parse_vt,'CASH':parse_cbc}[key](text)
+def parse(key,text):return {'TAIWAN_BROAD':parse_0050,'GLOBAL_EQUITY':parse_acwi,'CASH':parse_cbc}[key](text)
 
 def run():
  old=load_json('opportunity_market_facts.json',{'version':1,'facts':{}});facts=dict(old.get('facts') or {});now=dt.datetime.now(TZ).replace(microsecond=0);health={}
