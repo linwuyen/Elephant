@@ -76,17 +76,22 @@ jobs:
           python scripts/build_ai_concentration.py
           python scripts/build_intelligence_layer.py
           python scripts/build_decision_engine.py --no-journal
-          # Research-only refreshes may rebuild derived context but are not allowed
-          # to mutate the prospective decision journal.
           git restore -- data/decision_journal.json
           journal_after=$(sha256sum data/decision_journal.json | awk '{print $1}')
           test "$journal_before" = "$journal_after"
           python scripts/validate_decision_scores.py
           python scripts/validate_intelligence_layer.py
 
-      - name: Commit synced research snapshot and intelligence
+      - name: Commit only if research writer base is still current
         shell: bash
         run: |
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          local_sha=$(git rev-parse HEAD)
+          remote_sha=$(git rev-parse origin/main)
+          if [ "$local_sha" != "$remote_sha" ]; then
+            echo "Main advanced during research compute. Refusing to rebase stale derived data."
+            exit 75
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/consultant/ data/intelligence_layer.json data/decision_scores.json data/summary.json data/research_claims.json data/forecast.json data/risk_budget.json data/decision_engine.json
@@ -95,8 +100,6 @@ jobs:
             exit 0
           fi
           git commit -m 'data: sync consultant research and decision intelligence'
-          git fetch origin +refs/heads/main:refs/remotes/origin/main
-          git rebase origin/main
           git push origin HEAD:main
 
       - name: Deploy refreshed research
