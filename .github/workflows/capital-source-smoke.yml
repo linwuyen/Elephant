@@ -11,6 +11,7 @@ on:
       - 'scripts/source_security_facts.py'
       - 'scripts/build_opportunity_models.py'
       - 'scripts/build_security_fact_store.py'
+      - 'data/model_registry.json'
       - '.github/workflows/capital-source-smoke.yml'
   push:
     branches: [main]
@@ -19,6 +20,7 @@ on:
       - 'scripts/source_security_facts.py'
       - 'scripts/build_opportunity_models.py'
       - 'scripts/build_security_fact_store.py'
+      - 'data/model_registry.json'
       - '.github/workflows/capital-source-smoke.yml'
 
 permissions:
@@ -47,6 +49,11 @@ jobs:
           import json
           from pathlib import Path
 
+          source=json.loads(Path('data/opportunity_market_facts.json').read_text(encoding='utf-8'))
+          health=source.get('source_health') or {}
+          for k in ('TAIWAN_BROAD','GLOBAL_EQUITY','CASH'):
+              assert (health.get(k) or {}).get('status')=='ok', (k, health.get(k))
+
           sec=json.loads(Path('data/security_official_facts.json').read_text(encoding='utf-8'))
           cov=sec.get('coverage') or {}
           assert cov.get('target_count',0) >= 10, cov
@@ -60,6 +67,8 @@ jobs:
           for k in ('2330','TAIWAN_BROAD','GLOBAL_EQUITY','CASH'):
               assert k in public, (k, public)
           assert opp.get('public_available_count',0) >= 4, opp
+          for k in ('TAIWAN_BROAD','GLOBAL_EQUITY','CASH'):
+              assert public[k].get('fact_age_days') is not None and public[k]['fact_age_days'] <= 120, public[k]
 
           store=json.loads(Path('data/security_fact_store.json').read_text(encoding='utf-8'))
           assert store.get('version',0) >= 3
@@ -67,5 +76,5 @@ jobs:
               comp=row.get('research_completeness') or {}
               if comp.get('cash_flow_status')=='MISSING_DEDICATED_CASH_FLOW_EVIDENCE':
                   assert 'balance_sheet_cash_flow' in (comp.get('missing') or []), row.get('ticker')
-          print('CAPITAL SOURCE SMOKE PASS', cov)
+          print('CAPITAL SOURCE SMOKE PASS', {'opportunity_health':health,'security_coverage':cov})
           PY
