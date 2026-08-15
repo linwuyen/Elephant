@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "routes": {
+    "SECULAR_GROWTH": {
+      "preferred_models": ["scenario_forward_pe", "fcf_yield"],
+      "required_inputs": ["forward_eps", "scenario_probabilities", "reference_price"],
+      "notes": "AI infrastructure / secular growth companies; valuation must still normalize temporary margins."
+    },
+    "CYCLICAL_MEMORY": {
+      "preferred_models": ["normalized_midcycle_pe", "ev_ebitda_midcycle"],
+      "required_inputs": ["normalized_eps", "cycle_position", "reference_price"],
+      "notes": "Do not use peak trailing EPS as normalized earnings."
+    },
+    "PROPERTY": {
+      "preferred_models": ["nav", "backlog_completion"],
+      "required_inputs": ["nav_or_backlog", "reference_price"],
+      "notes": "P/E is secondary because earnings recognition is lumpy."
+    },
+    "UTILITY": {
+      "preferred_models": ["normalized_cash_flow", "yield_spread"],
+      "required_inputs": ["normalized_cash_flow", "reference_price"],
+      "notes": "Focus on recurring cash generation, capital intensity and contract/regulatory risk."
+    },
+    "FINANCIAL": {
+      "preferred_models": ["pb_roe"],
+      "required_inputs": ["book_value_per_share", "sustainable_roe", "reference_price"],
+      "notes": "Currently excluded from discovery screen, but route exists for future opt-in coverage."
+    },
+    "ASSET_NAV": {
+      "preferred_models": ["nav"],
+      "required_inputs": ["nav_per_share", "reference_price"],
+      "notes": "Use when assets dominate earnings power."
+    },
+    "GENERAL_INDUSTRIAL": {
+      "preferred_models": ["scenario_forward_pe", "normalized_pe"],
+      "required_inputs": ["forward_or_normalized_eps", "reference_price"],
+      "notes": "Fallback route only; deep research should upgrade classification when material."
+    }
+  },
+  "fail_closed": true
+}
