@@ -13,6 +13,8 @@ import build_decision_scores
 import build_ai_concentration
 import build_intelligence_layer
 import build_investment
+import build_vintage
+import build_decision_engine
 import revision_tracker
 import source_macro
 import source_moea
@@ -89,7 +91,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 9,
+        'pipeline_version': 10,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -112,12 +114,18 @@ def main():
     save_json('status.json', status)
     coverage(status)
     revision_tracker.record(before, now)
+
+    # Capture what was actually observable in this run before deriving new scores.
+    # This is the prospective point-in-time store used to prevent look-ahead bias.
+    build_vintage.capture(now)
+
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
     build_ai_concentration.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
+    build_decision_engine.generate(append_journal=True)
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 if __name__ == '__main__':
