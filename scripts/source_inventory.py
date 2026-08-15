@@ -3,26 +3,18 @@ from __future__ import annotations
 
 import re
 
-from common import decode_text, load_json, num, period_key, request_bytes, save_json
+from common import load_json, num, period_key, save_json
 from source_decision import dedup
 from source_moea import RowsParser
+from source_moea_live import base_year, fetch_live_page, validate_live_page
 
 INVENTORY_LIVE_URL = 'https://service.moea.gov.tw/EE521/common/Common.aspx?code=D&no=6'
 INVENTORY_CATALOG = 'https://data.gov.tw/dataset/109753'
 
 
 def parse_live_inventory_page(body: bytes, min_observations: int = 13):
-    """Parse MOEA's official manufacturing-inventory table.
-
-    The open-data CSV is explicitly "by major industry" and may not expose the
-    total-manufacturing row.  MOEA's current statistics table publishes the same
-    inventory-index family with 製造業 as the first numeric series.  We consume
-    that published total directly instead of synthesising it from sub-industries.
-    """
-    text = decode_text(body)
-    compact = re.sub(r'\s+', '', text)
-    if '製造業存貨指數' not in compact or '110年=100' not in compact:
-        raise ValueError('MOEA live inventory page signature changed')
+    """Parse MOEA's explicit manufacturing-total inventory index."""
+    text = validate_live_page(body, '製造業存貨指數')
 
     parser = RowsParser()
     parser.feed(text)
@@ -60,9 +52,10 @@ def parse_live_inventory_page(body: bytes, min_observations: int = 13):
     if not all(0 < float(v) < 1000 for _, v in data[-24:]):
         raise ValueError('MOEA live manufacturing inventory values outside plausible index range')
 
+    base = base_year(body)
     return {
         'name': '製造業 / 存貨指數',
-        'unit': 'index_2021_100',
+        'unit': f'index_{base}_100',
         'data': data,
         'selection': 'MOEA current statistics table / 製造業 total (first published series)',
         'layout': 'official_live_table',
@@ -79,7 +72,7 @@ def update(offline=None):
             'message': 'inventory live source skipped in offline mode',
         }
 
-    body = request_bytes(INVENTORY_LIVE_URL, 75, 2)[0]
+    body = fetch_live_page(INVENTORY_LIVE_URL, '製造業存貨指數', 75, 3)
     incoming = parse_live_inventory_page(body)
 
     obj = load_json('decision_inputs.json', {'series': {}, 'catalogs': {}})

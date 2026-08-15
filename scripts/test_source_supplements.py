@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import build_decision_scores as bds
 import source_inventory as si
+import source_moea as sm
+import source_moea_live as sml
 import source_supplements as ss
 
 
@@ -60,9 +62,8 @@ assert len(trans['data']) == 30
 assert trans['layout'] == 'transposed'
 assert trans['data'][-1][0] == '2026-06'
 
-# Current MOEA statistics page contract: the first published numeric series after
-# each month is the explicit 製造業 total. Partial-year rows such as 1-5月 must
-# never be mistaken for monthly observations.
+# Current MOEA statistics-page contract: inline tags/whitespace and a future base
+# year are presentation/metadata changes, not a reason to lose the indicator.
 live_rows = ['<table>', '<tr><th></th><th></th><th>製造業</th><th>金屬機電工業</th></tr>']
 for i in range(13):
     year = 114 if i < 8 else 115
@@ -72,18 +73,68 @@ for i in range(13):
     live_rows.append(
         f'<tr><td></td><td>{month}月</td><td>{120.0 + i:.2f}</td><td>{100.0 + i:.2f}</td></tr>'
     )
-live_rows.extend(['</table>', '<div>製造業存貨指數－按四大行業及中分類分 基期：110年=100</div>'])
+live_rows.extend([
+    '</table>',
+    '<div><span>製造業</span>\n<span>存貨指數</span>－按四大行業及中分類分 基期：112年＝100</div>',
+])
 live_body = ''.join(live_rows).encode('utf-8')
 live = si.parse_live_inventory_page(live_body)
 assert len(live['data']) == 13
 assert live['data'][0] == ['2025-05', 120.0]
 assert live['data'][-1] == ['2026-05', 132.0]
 assert live['layout'] == 'official_live_table'
+assert live['unit'] == 'index_2023_100'
 assert '製造業 total' in live['selection']
 
+# Wrong-indicator HTML must still fail closed.
+wrong_inventory_body = live_body.replace('存貨指數'.encode(), '銷售指數'.encode())
+try:
+    si.parse_live_inventory_page(wrong_inventory_body)
+    raise AssertionError('inventory parser accepted wrong MOEA indicator page')
+except ValueError as exc:
+    assert 'missing indicator' in str(exc)
+
+# Sales parser has the same resilient semantic contract and derives its unit from
+# the published base year instead of hard-coding 2021.
+sales_rows = ['<table>', '<tr><th></th><th>製造業</th></tr>', '<tr><td>115年</td></tr>']
+for month in range(1, 7):
+    values = ''.join(f'<td>{100 + month + i / 10:.1f}</td>' for i in range(23))
+    sales_rows.append(f'<tr><td>{month}月</td>{values}</tr>')
+sales_rows.extend([
+    '</table>',
+    '<div><span>製造業</span> <span>銷售指數</span>－按四大行業及中分類分 基期：112年＝100</div>',
+])
+sales_body = ''.join(sales_rows).encode('utf-8')
+sales = sm.parse_live_sales_index(sales_body)
+assert len(sales['series']['C']['data']) == 6
+assert sales['series']['C']['data'][-1][0] == '2026-06'
+assert sales['unit'] == 'index_2023_100'
+
+# HTTP 200 with generic/alternate HTML is a semantic failure, so fetch must retry
+# and only return once the requested indicator page validates.
+calls = []
+real_request = sml.request_bytes
+real_sleep = sml.time.sleep
+
+def fake_request(url, timeout=90, retries=3):
+    calls.append(url)
+    if len(calls) == 1:
+        return b'<html><body>generic service page</body></html>', 'text/html'
+    return sales_body, 'text/html'
+
+try:
+    sml.request_bytes = fake_request
+    sml.time.sleep = lambda _: None
+    fetched = sml.fetch_live_page(sm.SALES_INDEX_PAGE, '製造業銷售指數', 1, 3)
+finally:
+    sml.request_bytes = real_request
+    sml.time.sleep = real_sleep
+assert fetched == sales_body
+assert len(calls) == 2
+assert '_elephant_retry=' in calls[1]
+
 # Score-consumption contract: once the canonical official manufacturing total
-# exists, a longer legacy inventory series must never outrank it.  This is the
-# exact production regression that previously left Growth Confidence at 85%.
+# exists, a longer legacy inventory series must never outrank it.
 canonical_inventory = {
     'name': '製造業 / 存貨指數',
     'data': [['2025-05', 100.0], ['2026-05', 105.0]],
@@ -112,8 +163,8 @@ score_inputs = {
     }
 }
 prod = {'data': [['2025-06', 100.0], ['2026-06', 110.0]]}
-sales = {'data': [['2025-05', 100.0], ['2026-05', 108.0]]}
-growth = bds.growth_score('2026-06', prod, sales, {}, score_inputs)
+sales_score = {'data': [['2025-05', 100.0], ['2026-05', 108.0]]}
+growth = bds.growth_score('2026-06', prod, sales_score, {}, score_inputs)
 assert growth is not None
 assert growth['confidence'] == 100
 assert {x['key'] for x in growth['components']} == {
