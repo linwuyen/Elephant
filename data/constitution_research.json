@@ -14,6 +14,14 @@
       "horizon_months": "number",
       "evidence_and_assumptions": ["string"]
     },
+    "long_horizon_valuation": {
+      "status": "COMPLETE|INCOMPLETE",
+      "model_type": "PE|P_FCF|OTHER_MULTIPLE",
+      "current_multiple": "number",
+      "bull_multiple": "number",
+      "bear_fair_value": "number",
+      "evidence_and_assumptions": ["string"]
+    },
     "catalysts": [{
       "name": "string",
       "mechanism": "string",
@@ -34,5 +42,5 @@
       "source": "string"
     }]
   },
-  "guardrail": "This file stores explicit research/model judgments only. Missing structured fields fail closed; never infer PASS from narrative prose."
+  "guardrail": "This file stores explicit 24-36m research/model judgments only. Missing structured fields fail closed; never infer PASS from narrative prose or substitute the shorter 12-18m Alpha scenario."
 }
