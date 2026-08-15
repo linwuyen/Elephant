@@ -52,10 +52,13 @@ jobs:
           node --check decision.js
           node --check intelligence.js
           node --check decision_engine.js
+          node --check decision_validation.js
           python -m py_compile scripts/*.py
       - name: Rebuild derived decision intelligence in validation workspace
         run: |
           python scripts/build_ai_concentration.py
+          python scripts/build_model_validation.py
+          python scripts/build_structural_layers.py
           python scripts/build_intelligence_layer.py
       - name: Refresh Alpha integration and Capital OS in validation workspace
         run: |
@@ -67,6 +70,10 @@ jobs:
         run: |
           python scripts/validate_data.py
           python scripts/validate_decision_scores.py
+          python scripts/validate_model_validation.py
+          python scripts/validate_structural_layers.py
+          python scripts/test_model_validation.py
+          python scripts/test_source_supplements.py
           python scripts/validate_intelligence_layer.py
           python scripts/validate_investment.py
           python scripts/test_investment_integration.py
@@ -93,8 +100,14 @@ jobs:
       - name: Build derived intelligence for Pages artifact
         run: |
           python scripts/build_ai_concentration.py
+          python scripts/build_model_validation.py
+          python scripts/build_structural_layers.py
           python scripts/build_intelligence_layer.py
           python scripts/validate_decision_scores.py
+          python scripts/validate_model_validation.py
+          python scripts/validate_structural_layers.py
+          python scripts/test_model_validation.py
+          python scripts/test_source_supplements.py
           python scripts/validate_intelligence_layer.py
       - name: Build latest investment, Capital OS and Decision Engine layers for Pages artifact
         run: |

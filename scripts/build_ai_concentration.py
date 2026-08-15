@@ -132,6 +132,30 @@ def non_electronic_breadth(prod_series, period):
     return sum(1 for x in values if x > 0) / len(values) * 100
 
 
+def electronic_order_series(inp):
+    # Prefer category series that originate from the same general export-order
+    # resource as the total because their level units are naturally comparable.
+    general = find_many(inp, 'orders.', [
+        ('電子產品',),
+        ('資訊通信', '資訊通訊'),
+    ])
+    if general:
+        return general, True, 'MOEA general export-order table'
+
+    # Dedicated category resources are authoritative for direction but their level
+    # units are not assumed comparable to the general resource. They therefore feed
+    # only the YoY growth-dominance fallback below, never a fabricated share.
+    supplement = []
+    for prefix, needles in [
+        ('orders_supplement.electronic.', ('電子產品',)),
+        ('orders_supplement.ict.', ('資訊通訊', '資訊通信')),
+    ]:
+        s = find_one(inp, prefix, needles)
+        if s:
+            supplement.append(s)
+    return supplement, False, 'MOEA dedicated category export-order tables'
+
+
 def score_for(period, industry, decision_inputs, ai_inputs):
     prod_series = industry.get('datasets', {}).get('moea.industry.production', {}).get('series', {})
     total_prod = prod_series.get('C', {})
@@ -139,23 +163,17 @@ def score_for(period, industry, decision_inputs, ai_inputs):
     inp = decision_inputs.get('series', {})
 
     total_orders = find_one(inp, 'orders.', ('總計',)) or find_one(inp, 'orders.', ('總額',)) or find_one(inp, 'orders.', ('外銷訂單',))
-    e_orders = find_many(inp, 'orders.', [
-        ('電子產品',),
-        ('資訊通信',),
-        ('資訊通訊',),
-    ])
+    e_orders, levels_comparable, order_source_note = electronic_order_series(inp)
 
     order_raw = order_score = order_period = None
     e_value, e_period = combine(e_orders, period)
     t_value, t_period = latest_before(total_orders, period, 1) if total_orders else (None, None)
-    if e_value is not None and t_value and 0 < e_value <= t_value * 1.25:
+    if levels_comparable and e_value is not None and t_value and 0 < e_value <= t_value * 1.25:
         order_raw = e_value / t_value * 100
         order_score = clamp((order_raw - 25) / 50 * 100)
         order_period = min(e_period, t_period)
         order_note = '電子產品＋資訊通信外銷訂單占總訂單比重；25%→0、75%→100 線性映射'
     else:
-        # When category levels cannot be cleanly summed, use growth dominance rather
-        # than fabricate a share.
         e_growths = [yoy(s, period) for s in e_orders]
         e_growths = [x for x in e_growths if x is not None]
         total_y = yoy(total_orders, period) if total_orders else None
@@ -164,7 +182,7 @@ def score_for(period, industry, decision_inputs, ai_inputs):
             order_raw = gap
             order_score = clamp(50 + gap * 2)
             order_period = period
-            order_note = '電子相關訂單 YoY 相對總訂單 YoY 差距 fallback；0ppt→50'
+            order_note = f'電子相關訂單 YoY 相對總訂單 YoY 差距；0ppt→50；{order_source_note}，跨資源不假設 level 可比'
         else:
             order_note = '電子訂單資料不足'
 
