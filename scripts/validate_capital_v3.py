@@ -37,7 +37,7 @@ for r in cres.get('securities',[]):
  statuses={g.get('status') for g in gates.values()}
  if not statuses <= {'PASS','FAIL','BLOCKED'}:fail('constitution status domain')
  if r.get('constitution_status')=='PASS' and statuses!={'PASS'}:fail('false constitution pass '+str(r.get('ticker')))
- if r.get('capital_eligible') and not (r.get('constitution_status')=='PASS' and r.get('upstream_action')=='BUY_CANDIDATE'):fail('false capital eligibility '+str(r.get('ticker')))
+ if r.get('capital_eligible') and not (r.get('constitution_status')=='PASS' and r.get('upstream_action')=='BUY CANDIDATE'):fail('false capital eligibility '+str(r.get('ticker')))
 cmap={str(r.get('ticker')):r for r in cres.get('securities',[])}
 for r in cap.get('lifecycle',[]):
  t=str(r.get('ticker'));cs=cmap.get(t,{}).get('constitution_status','BLOCKED')
