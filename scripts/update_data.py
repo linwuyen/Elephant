@@ -25,7 +25,9 @@ import source_ris
 import source_decision
 import source_ai_concentration
 import source_supplements
+import source_inventory
 import source_alpha
+
 
 def segis(offline=False):
     if offline:
@@ -39,6 +41,7 @@ def segis(offline=False):
     except Exception as e:
         msg += f' Catalog probe: {type(e).__name__}.'
     return {'status': 'blocked', 'latest_period': None, 'message': msg, 'candidate_download': found, 'source_url': URLS['segis_catalog']}
+
 
 def coverage(status):
     macro = load_json('macro.json', {})
@@ -69,6 +72,7 @@ def coverage(status):
         rows.append({'source':'mof','dataset':'official.ai_concentration_inputs','indicator':iid,'name':s.get('name',iid),'frequency':'monthly','points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
     save_json('coverage.json', {'datasets': rows, 'source_status': status['sources']})
 
+
 def refresh_source(status, bad, sid, fn, offline_dir, critical=True):
     try:
         status['sources'][sid] = {'status': 'ok', **fn(offline_dir)}
@@ -84,6 +88,7 @@ def refresh_source(status, bad, sid, fn, offline_dir, critical=True):
         }
         print(sid, 'DEGRADED', repr(e), file=sys.stderr)
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--offline-dir', type=Path)
@@ -94,7 +99,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 11,
+        'pipeline_version': 12,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -108,6 +113,10 @@ def main():
     # Enrich only missing decision-critical series using current official endpoints.
     # The curl fallback still verifies TLS; certificate verification is never disabled.
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
+    # The open-data inventory CSV is by major industry and currently omits a usable
+    # total-manufacturing series. Consume MOEA's explicitly published 製造業 total
+    # from the current-statistics table instead of synthesising a proxy.
+    refresh_source(status, bad, 'inventory_manufacturing', source_inventory.update, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
@@ -133,6 +142,7 @@ def main():
     build_intelligence_layer.generate()
     build_decision_engine.generate(append_journal=True)
     print(json.dumps(status, ensure_ascii=False, indent=2))
+
 
 if __name__ == '__main__':
     main()

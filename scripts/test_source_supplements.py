@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import source_inventory as si
 import source_supplements as ss
 
 
@@ -57,6 +58,27 @@ trans = ss.parse_inventory_index(transposed)['inventory.manufacturing_index']
 assert len(trans['data']) == 30
 assert trans['layout'] == 'transposed'
 assert trans['data'][-1][0] == '2026-06'
+
+# Current MOEA statistics page contract: the first published numeric series after
+# each month is the explicit 製造業 total. Partial-year rows such as 1-5月 must
+# never be mistaken for monthly observations.
+live_rows = ['<table>', '<tr><th></th><th></th><th>製造業</th><th>金屬機電工業</th></tr>']
+for i in range(13):
+    year = 114 if i < 8 else 115
+    month = i + 5 if i < 8 else i - 7
+    if i in (0, 8):
+        live_rows.append(f'<tr><td>{year}年</td><td>{"" if i == 0 else "1-5月"}</td><td>999.0</td><td>888.0</td></tr>')
+    live_rows.append(
+        f'<tr><td></td><td>{month}月</td><td>{120.0 + i:.2f}</td><td>{100.0 + i:.2f}</td></tr>'
+    )
+live_rows.extend(['</table>', '<div>製造業存貨指數－按四大行業及中分類分 基期：110年=100</div>'])
+live_body = ''.join(live_rows).encode('utf-8')
+live = si.parse_live_inventory_page(live_body)
+assert len(live['data']) == 13
+assert live['data'][0] == ['2025-05', 120.0]
+assert live['data'][-1] == ['2026-05', 132.0]
+assert live['layout'] == 'official_live_table'
+assert '製造業 total' in live['selection']
 
 orders = monthly_rows(
     '資料期(民國年),貨品別,統計項目,統計值(美元)',
