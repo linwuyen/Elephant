@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "as_of": null,
+  "securities": {},
+  "schema": {
+    "long_horizon_earnings": {
+      "status": "COMPLETE|INCOMPLETE",
+      "metric": "EPS|FCF_PER_SHARE",
+      "baseline_period": "YYYY or TTM",
+      "baseline_value": "number",
+      "target_period": "YYYY",
+      "target_value": "number",
+      "target_multiple": "number",
+      "horizon_months": "number",
+      "evidence_and_assumptions": ["string"]
+    },
+    "long_horizon_valuation": {
+      "status": "COMPLETE|INCOMPLETE",
+      "model_type": "PE|P_FCF|OTHER_MULTIPLE",
+      "current_multiple": "number",
+      "bull_multiple": "number",
+      "bear_fair_value": "number",
+      "evidence_and_assumptions": ["string"]
+    },
+    "catalysts": [{
+      "name": "string",
+      "mechanism": "string",
+      "kpi": "string",
+      "expected_window": "string",
+      "source_quality": "FIRST_PARTY",
+      "source_url": "string"
+    }],
+    "survival": {
+      "status": "PASS|FAIL|INCOMPLETE",
+      "basis": ["string"],
+      "existential_risk": "NONE|MATERIAL|UNKNOWN"
+    },
+    "quarterly_checks": [{
+      "metric": "string",
+      "expected": "string",
+      "fail_condition": "string",
+      "source": "string"
+    }]
+  },
+  "guardrail": "This file stores explicit 24-36m research/model judgments only. Missing structured fields fail closed; never infer PASS from narrative prose or substitute the shorter 12-18m Alpha scenario."
+}

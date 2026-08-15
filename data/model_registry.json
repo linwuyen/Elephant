@@ -1,7 +1,14 @@
 {
-  "model_version": "capital-v3.0.0",
+  "model_version": "capital-v3.1.0",
   "schema_version": 1,
-  "objective": "maximize long-run after-cost geometric return subject to liquidity, concentration and forced-sale constraints",
+  "objective": "maximize long-run after-cost geometric return subject to liquidity, concentration, forced-sale constraints and the asymmetric-growth Investment Constitution",
+  "investment_constitution": {
+    "version": 1,
+    "authority": "FINAL_CAPITAL_ELIGIBILITY_GATE",
+    "required_before_new_capital": true,
+    "rules": ["earnings_power","fundamental_driven_return","catalyst","convexity","survival_downside","quarterly_falsifiability"],
+    "missing_evidence_policy": "BLOCKED"
+  },
   "benchmark_models": {
     "2330": {"method":"upstream_scenario_valuation","authority":"ALPHA_ENGINE"},
     "TAIWAN_BROAD": {"method":"earnings_yield_plus_sustainable_nominal_growth","proxy":"0050","sustainable_nominal_growth_pct":4.0,"max_fact_age_days":240,"authority":"MODEL_ASSUMPTION"},
@@ -18,7 +25,8 @@
     "single_stock_cap_pct":25,
     "new_alpha_cap_pct":12,
     "broad_equity_cap_pct":55,
-    "no_shorting":true
+    "no_shorting":true,
+    "individual_stock_entry_requirement":"upstream BUY_CANDIDATE AND Investment Constitution PASS"
   },
   "ruin_model": {
     "method":"factor_normal_approximation_plus_deterministic_reverse_stress",
@@ -33,7 +41,7 @@
     "no_backfill_before_point_in_time_capture":true
   },
   "governance": {
-    "decision_snapshot_requires":["model_version","code_commit","evidence_hash","reference_price","hurdle","expected_return"],
+    "decision_snapshot_requires":["model_version","code_commit","evidence_hash","reference_price","hurdle","expected_return","constitution_status"],
     "personal_data_storage":"BROWSER_LOCAL_ONLY",
     "automatic_trading":false
   }

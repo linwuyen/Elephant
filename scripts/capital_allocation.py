@@ -45,8 +45,8 @@ def opportunity(alpha,inputs,portfolio):
 def research_queue(screen,alpha):
     done={str(x.get('ticker')) for x in alpha.get('stocks',[])}; rows=[]
     for r in screen.get('deep_research_queue',[]) or []:
-        t=str(r.get('ticker')); rows.append({'ticker':t,'name':r.get('name'),'market':r.get('market'),'rank':r.get('rank'),'screen_priority':r.get('screen_priority'),'reference_price':r.get('reference_price'),'archetype':archetype(r),'already_researched':t in done,'status':'REFRESH' if t in done else 'NEW_RESEARCH','required_evidence':['reference_price','earnings_basis','revenue_trend','balance_sheet_cash_flow','material_events','valuation_basis'],'promotion_authority':'NONE','next_action':'collect first-party evidence → valuation route → scenarios → upstream Alpha Buy Gate'})
-    return {'status':'COMPLETE' if screen.get('meta',{}).get('status')=='COMPLETE' else 'DEGRADED','as_of':screen.get('meta',{}).get('as_of'),'items':rows,'new_research_count':sum(x['status']=='NEW_RESEARCH' for x in rows),'guardrail':'Research queue cannot create BUY CANDIDATE.'}
+        t=str(r.get('ticker')); rows.append({'ticker':t,'name':r.get('name'),'market':r.get('market'),'rank':r.get('rank'),'screen_priority':r.get('screen_priority'),'reference_price':r.get('reference_price'),'archetype':archetype(r),'already_researched':t in done,'status':'REFRESH' if t in done else 'NEW_RESEARCH','required_evidence':['reference_price','earnings_basis','revenue_trend','balance_sheet_cash_flow','material_events','valuation_basis','24_36m_eps_or_fcf_path','structured_catalyst','survival_basis','quarterly_falsification_metrics'],'promotion_authority':'NONE','next_action':'collect first-party evidence → valuation route → Investment Constitution → upstream Alpha Buy Gate'})
+    return {'status':'COMPLETE' if screen.get('meta',{}).get('status')=='COMPLETE' else 'DEGRADED','as_of':screen.get('meta',{}).get('as_of'),'items':rows,'new_research_count':sum(x['status']=='NEW_RESEARCH' for x in rows),'guardrail':'Research queue cannot create BUY CANDIDATE or pass the Constitution without structured evidence.'}
 
 def weights(portfolio):
     if portfolio.get('status')!='COMPLETE' or not finite(portfolio.get('investable_assets_twd')) or portfolio['investable_assets_twd']<=0:return {}
@@ -56,20 +56,22 @@ def weights(portfolio):
     if finite(portfolio.get('cash_twd')): w['CASH']=float(portfolio['cash_twd'])/total*100
     return w
 
-def lifecycle(alpha,opp,policy,portfolio,friction):
+def lifecycle(alpha,opp,policy,portfolio,friction,constitution):
     h=opp.get('hurdle_expected_return_pct'); w=weights(portfolio); lc=policy.get('lifecycle',{}); out=[]
     for s in alpha.get('stocks',[]):
+        t=str(s.get('ticker')); c=constitution.get(t,{}); cs=c.get('constitution_status','BLOCKED')
         er=s.get('valuation_model',{}).get('expected_return_pct'); na=float(er)-float(h)-float(friction) if all(finite(x) for x in (er,h,friction)) else None
-        up=s.get('action'); cw=w.get(str(s.get('ticker'))); act='RESEARCH'; reason='Upstream action is not BUY; portfolio layer cannot upgrade it.'
+        up=s.get('action'); cw=w.get(t); act='RESEARCH'; reason='Upstream action is not BUY; portfolio layer cannot upgrade it.'
         if s.get('thesis_status')=='INVALIDATED': act,reason='EXIT_REVIEW','Thesis invalidated.'
         elif up=='BUY CANDIDATE':
-            if na is None: act,reason='HOLD_REVIEW','Opportunity hurdle incomplete.'
+            if cs!='PASS': act,reason='CONSTITUTION_BLOCK',f'Upstream BUY is blocked because Investment Constitution is {cs}.'
+            elif na is None: act,reason='HOLD_REVIEW','Opportunity hurdle incomplete.'
             elif na<=float(lc.get('exit_when_net_alpha_spread_below_pct',-5)): act,reason='EXIT_REVIEW','Net alpha is materially below opportunity hurdle.'
             elif na<=float(lc.get('trim_when_net_alpha_spread_below_pct',2)): act,reason='TRIM_REVIEW','Net alpha edge compressed.'
-            elif cw is None: act,reason='BUY_REVIEW','Upstream BUY remains valid; sizing requires current portfolio state.'
-            else: act,reason='ADD_REVIEW','Upstream BUY remains valid and position exists.'
+            elif cw is None: act,reason='BUY_REVIEW','Upstream BUY and Investment Constitution both pass; sizing requires current portfolio state.'
+            else: act,reason='ADD_REVIEW','Upstream BUY and Investment Constitution both pass and position exists.'
         elif cw is not None: act,reason='HOLD_REVIEW','Held position is not an upstream BUY; review thesis and opportunity cost.'
-        out.append({'ticker':s.get('ticker'),'name':s.get('name'),'upstream_action':up,'portfolio_action':act,'expected_return_pct':er,'hurdle_expected_return_pct':h,'net_alpha_spread_pct':None if na is None else round(na,2),'current_weight_pct':None if cw is None else round(cw,2),'reason':reason})
+        out.append({'ticker':s.get('ticker'),'name':s.get('name'),'upstream_action':up,'constitution_status':cs,'constitution_capital_eligible':bool(c.get('capital_eligible')),'portfolio_action':act,'expected_return_pct':er,'hurdle_expected_return_pct':h,'net_alpha_spread_pct':None if na is None else round(na,2),'current_weight_pct':None if cw is None else round(cw,2),'reason':reason})
     return out
 
 def risk(alpha,portfolio,policy):
@@ -89,28 +91,30 @@ def risk(alpha,portfolio,policy):
         impact=eq/100*shock; post=assets*(1+impact/100); stress.append({'market_shock_pct':shock,'portfolio_impact_pct':round(impact,2),'post_shock_debt_ratio_pct':round(debt/post*100,2) if post>0 else None})
     return {'status':'REVIEW' if violations else 'PASS','personalized':True,'weights_pct':{k:round(v,2) for k,v in w.items()},'common_factor_exposure_pct':{k:round(v,2) for k,v in factors.items()},'debt_to_investable_assets_pct':None if dr is None else round(dr,2),'violations':violations,'stress_tests':stress}
 
-def sizing(alpha,opp,policy,portfolio):
+def sizing(alpha,opp,policy,portfolio,constitution):
     if portfolio.get('status')!='COMPLETE': return {'status':'UNCONFIGURED','targets':[],'note':'Configure portfolio_state before personalized sizing.'}
     h=opp.get('hurdle_expected_return_pct')
     if h is None:return {'status':'BLOCKED','targets':[],'note':'Opportunity hurdle unavailable.'}
     rows=[]
     for s in alpha.get('stocks',[]):
-        if s.get('action')!='BUY CANDIDATE':continue
+        t=str(s.get('ticker')); c=constitution.get(t,{})
+        if s.get('action')!='BUY CANDIDATE' or c.get('constitution_status')!='PASS':continue
         er=s.get('valuation_model',{}).get('expected_return_pct'); conf=s.get('confidence_score'); down=s.get('risk_model',{}).get('downside_pct'); d=distribution(s,h); beat=d.get('probability_beating_hurdle_pct')
         if all(finite(x) for x in (er,conf,down,beat)):
             raw=max(0,float(er)-float(h))*(float(conf)/100)*(float(beat)/100)/max(10,float(down))
             if raw>0:rows.append((s,raw,d))
-    if not rows:return {'status':'NO_BUY','targets':[],'note':'No fully qualified BUY candidate with complete sizing inputs.'}
+    if not rows:return {'status':'NO_BUY','targets':[],'note':'No upstream BUY candidate also passes the six-rule Investment Constitution with complete sizing inputs.'}
     total=sum(x[1] for x in rows); w=weights(portfolio); cap=policy.get('constraints',{}); invest=policy.get('sizing',{}).get('normalize_to_investable_pct',85); targets=[]
     for s,raw,d in rows:
         cur=w.get(str(s.get('ticker')),0); maxw=cap.get('max_single_stock_pct',25) if cur>0 else min(cap.get('max_single_stock_pct',25),cap.get('max_new_position_pct',12)); target=min(maxw,raw/total*invest)
-        targets.append({'ticker':s.get('ticker'),'name':s.get('name'),'target_weight_pct':round(target,2),'current_weight_pct':round(cur,2),'raw_score':round(raw,4),'probability_beating_hurdle_pct':d.get('probability_beating_hurdle_pct')})
+        targets.append({'ticker':s.get('ticker'),'name':s.get('name'),'target_weight_pct':round(target,2),'current_weight_pct':round(cur,2),'raw_score':round(raw,4),'probability_beating_hurdle_pct':d.get('probability_beating_hurdle_pct'),'constitution_status':'PASS'})
     return {'status':'COMPLETE','targets':targets,'cash_floor_pct':cap.get('cash_floor_pct')}
 def fp(obj):return hashlib.sha256(json.dumps(obj,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 
 def generate():
     now=dt.datetime.now(TZ).replace(microsecond=0); bundle=load('alpha_engine.json'); alpha=bundle.get('alpha',{}); screen=bundle.get('screen',{}); policy=load('portfolio_policy.json'); portfolio=load('portfolio_state.json'); inputs=load('opportunity_inputs.json'); friction=inputs.get('frictions',{}).get('round_trip_friction_pct',0)
-    opp=opportunity(alpha,inputs,portfolio); rq=research_queue(screen,alpha); lc=lifecycle(alpha,opp,policy,portfolio,friction); rk=risk(alpha,portfolio,policy); sz=sizing(alpha,opp,policy,portfolio); probs=[{'ticker':s.get('ticker'),'name':s.get('name'),'archetype':archetype(s),'valuation_model':s.get('valuation_model',{}).get('model_type'),'distribution':distribution(s,opp.get('hurdle_expected_return_pct'))} for s in alpha.get('stocks',[])]
-    out={'version':1,'generated_at':now.isoformat(),'status':'COMPLETE' if alpha and screen else 'DEGRADED','objective':policy.get('objective'),'research_queue':rq,'opportunity_set':opp,'probabilistic_returns':probs,'lifecycle':lc,'portfolio_risk':rk,'target_sizing':sz,'portfolio_state_status':portfolio.get('status'),'guardrails':{'portfolio_cannot_upgrade_upstream_action':True,'unavailable_benchmarks_not_fabricated':True,'personalized_sizing_requires_complete_portfolio_state':True,'no_automatic_trading':True}}
-    out['fingerprint']=fp({k:out[k] for k in ('research_queue','opportunity_set','lifecycle','portfolio_risk','target_sizing')}); save_json('capital_allocation.json',out); save_json('deep_research_queue.json',rq); save_json('opportunity_set.json',opp); return out
+    cres=load('investment_constitution_results.json',{}); cmap={str(x.get('ticker')):x for x in cres.get('securities',[])}
+    opp=opportunity(alpha,inputs,portfolio); rq=research_queue(screen,alpha); lc=lifecycle(alpha,opp,policy,portfolio,friction,cmap); rk=risk(alpha,portfolio,policy); sz=sizing(alpha,opp,policy,portfolio,cmap); probs=[{'ticker':s.get('ticker'),'name':s.get('name'),'archetype':archetype(s),'valuation_model':s.get('valuation_model',{}).get('model_type'),'distribution':distribution(s,opp.get('hurdle_expected_return_pct'))} for s in alpha.get('stocks',[])]
+    out={'version':2,'generated_at':now.isoformat(),'status':'COMPLETE' if alpha and screen and cres.get('status')=='COMPLETE' else 'DEGRADED','objective':policy.get('objective'),'investment_constitution':{'status':cres.get('status'),'pass_count':cres.get('pass_count'),'capital_eligible_count':cres.get('capital_eligible_count'),'authority':cres.get('authority')},'research_queue':rq,'opportunity_set':opp,'probabilistic_returns':probs,'lifecycle':lc,'portfolio_risk':rk,'target_sizing':sz,'portfolio_state_status':portfolio.get('status'),'guardrails':{'portfolio_cannot_upgrade_upstream_action':True,'constitution_required_for_new_capital':True,'constitution_cannot_create_upstream_buy':True,'unavailable_benchmarks_not_fabricated':True,'personalized_sizing_requires_complete_portfolio_state':True,'no_automatic_trading':True}}
+    out['fingerprint']=fp({k:out[k] for k in ('investment_constitution','research_queue','opportunity_set','lifecycle','portfolio_risk','target_sizing')}); save_json('capital_allocation.json',out); save_json('deep_research_queue.json',rq); save_json('opportunity_set.json',opp); return out
 if __name__=='__main__': print(json.dumps(generate(),ensure_ascii=False,indent=2))
