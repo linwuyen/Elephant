@@ -1,0 +1,40 @@
+{
+  "model_version": "capital-v3.0.0",
+  "schema_version": 1,
+  "objective": "maximize long-run after-cost geometric return subject to liquidity, concentration and forced-sale constraints",
+  "benchmark_models": {
+    "2330": {"method":"upstream_scenario_valuation","authority":"ALPHA_ENGINE"},
+    "TAIWAN_BROAD": {"method":"earnings_yield_plus_sustainable_nominal_growth","proxy":"0050","sustainable_nominal_growth_pct":4.0,"max_fact_age_days":240,"authority":"MODEL_ASSUMPTION"},
+    "GLOBAL_EQUITY": {"method":"earnings_yield_plus_sustainable_nominal_growth","proxy":"VT","sustainable_nominal_growth_pct":4.0,"max_fact_age_days":240,"authority":"MODEL_ASSUMPTION"},
+    "CASH": {"method":"cbc_discount_rate_proxy","max_fact_age_days":120,"authority":"FIRST_PARTY_RATE_PROXY"},
+    "DEBT_REPAYMENT": {"method":"user_effective_rate","storage":"BROWSER_LOCAL_ONLY","authority":"PRIVATE_INPUT"}
+  },
+  "optimizer": {
+    "method":"constrained_expected_log_growth_approximation",
+    "formula":"mu'w - 0.5*lambda*w'Sigma*w - frictions",
+    "risk_aversion_lambda":1.25,
+    "iterations":500,
+    "cash_floor_pct":15,
+    "single_stock_cap_pct":25,
+    "new_alpha_cap_pct":12,
+    "broad_equity_cap_pct":55,
+    "no_shorting":true
+  },
+  "ruin_model": {
+    "method":"factor_normal_approximation_plus_deterministic_reverse_stress",
+    "horizon":"12m",
+    "outputs":["p_drawdown_beyond_user_limit","p_liquidity_forced_sale","stress_post_debt_ratio"],
+    "warning":"MODEL ESTIMATE; not a guarantee and not a substitute for brokerage maintenance rules"
+  },
+  "calibration": {
+    "primary_kpi":"realized_opportunity_cost_alpha",
+    "horizons_days":{"3m":90,"6m":180,"12m":365,"18m":548},
+    "attribution_dimensions":["earnings_error","multiple_error","timing_error","thesis_error"],
+    "no_backfill_before_point_in_time_capture":true
+  },
+  "governance": {
+    "decision_snapshot_requires":["model_version","code_commit","evidence_hash","reference_price","hurdle","expected_return"],
+    "personal_data_storage":"BROWSER_LOCAL_ONLY",
+    "automatic_trading":false
+  }
+}

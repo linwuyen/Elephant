@@ -10,7 +10,8 @@ on:
     paths:
       - 'scripts/**'
       - 'data/portfolio_*.json'
-      - 'data/opportunity_inputs.json'
+      - 'data/opportunity_*.json'
+      - 'data/model_registry.json'
       - 'data/valuation_archetypes.json'
       - '.github/workflows/update-data.yml'
 
@@ -44,12 +45,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Syntax check intelligence and capital pipelines
-        run: |
-          python -m py_compile scripts/source_ai_concentration.py scripts/source_supplements.py scripts/build_ai_concentration.py scripts/build_model_validation.py scripts/build_structural_layers.py scripts/validate_model_validation.py scripts/validate_structural_layers.py scripts/build_intelligence_layer.py scripts/validate_intelligence_layer.py scripts/build_vintage.py scripts/build_decision_engine.py scripts/validate_decision_engine.py scripts/valuation_router.py scripts/capital_allocation.py scripts/update_calibration.py scripts/refresh_capital.py scripts/validate_capital_allocation.py scripts/test_capital_allocation.py scripts/validate_calibration.py
+      - name: Syntax check all pipelines
+        run: python -m py_compile scripts/*.py
 
       - name: Fetch official sources and rebuild web data
         run: python scripts/update_data.py
+
+      - name: Refresh public opportunity and security facts
+        run: |
+          python scripts/source_opportunity.py
+          python scripts/source_security_facts.py
 
       - name: Build Capital Allocation OS
         run: python scripts/refresh_capital.py
@@ -70,6 +75,8 @@ jobs:
           python scripts/validate_capital_allocation.py
           python scripts/test_capital_allocation.py
           python scripts/validate_calibration.py
+          python scripts/validate_capital_v3.py
+          python scripts/test_capital_v3.py
 
       - name: Commit refreshed data and heartbeat
         run: |

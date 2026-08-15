@@ -1,5 +1,5 @@
 (()=>{
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const cfg={
     cycle:{name:'Cycle Score',question:'現在景氣強不強？'},
     growth_persistence:{name:'Growth Persistence',question:'這波景氣還能持續嗎？'},
@@ -70,27 +70,28 @@
   }
   init();
 
-  // Intelligence Layer is kept in a separate module so consultant context cannot
-  // accidentally enter the score-rendering path above.
   if(!document.querySelector('script[data-elephant-intelligence]')){
     const s=document.createElement('script');
     s.src='intelligence.js'; s.defer=true; s.dataset.elephantIntelligence='1';
     document.head.appendChild(s);
   }
 
-  // Closed-loop Decision Engine stays downstream from scores/investment. It may
-  // size risk envelopes, but it cannot modify deterministic scores or Alpha actions.
   if(!document.querySelector('script[data-elephant-decision-engine]')){
     const s=document.createElement('script');
     s.src='decision_engine.js'; s.defer=true; s.dataset.elephantDecisionEngine='1';
     document.head.appendChild(s);
   }
 
-  // Validation is a separate non-authoritative observer. It may challenge model
-  // assumptions and expose evidence gaps, but it cannot change scores or forecasts.
   if(!document.querySelector('script[data-elephant-validation]')){
     const s=document.createElement('script');
     s.src='decision_validation.js'; s.defer=true; s.dataset.elephantValidation='1';
     document.head.appendChild(s);
+  }
+
+  // Capital v3 is a browser-local private optimizer. It consumes only public model
+  // artifacts; personal holdings/debt never enter GitHub or any server workflow.
+  if(!document.querySelector('script[data-elephant-personal-capital]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='personal_capital.css';l.dataset.elephantPersonalCapitalStyle='1';document.head.appendChild(l);
+    const s=document.createElement('script');s.src='personal_capital.js';s.defer=true;s.dataset.elephantPersonalCapital='1';document.head.appendChild(s);
   }
 })();
