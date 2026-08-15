@@ -88,6 +88,8 @@ jobs:
             exit 0
           fi
           git commit -m 'data: sync consultant research and decision intelligence'
+          git fetch origin +refs/heads/main:refs/remotes/origin/main
+          git rebase origin/main
           git push origin HEAD:main
 
       - name: Deploy refreshed research
