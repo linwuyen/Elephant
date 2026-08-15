@@ -130,19 +130,26 @@ def rows_from_csv_bytes(body):
     return [normalize_keys(r) for r in csv.DictReader(decode_text(body).splitlines())]
 
 def candidate_field_coverage(keys):
-    """Count semantic NDC fields present in a CSV candidate.
-
-    Dataset 6099 ZIPs can contain several CSVs. Row count is not evidence that a
-    file is the canonical wide business-cycle table; a longer composite-only file
-    can otherwise outrank the field-rich table and silently drop component series
-    such as 股價指數. The source contract is semantic field coverage first.
-    """
     keys = list(keys)
     return sum(1 for aliases in FIELD_MAP.values() if find_col(keys, aliases))
 
+def _signal_col(keys):
+    direct = next((k for k in keys if k in ('景氣對策信號', '景氣燈號')), None)
+    if direct:
+        return direct
+    return next((k for k in keys if ('景氣對策信號' in k or '景氣燈號' in k) and '分數' not in k), None)
+
 def rows_from_zip(body):
+    """Merge every semantic CSV in dataset 6099 into one logical wide table.
+
+    The NDC ZIP is a delivery container, not a promise that every published field
+    lives in one canonical CSV. Each member with a date column and at least one
+    known FIELD_MAP series contributes observations. Columns are canonicalized by
+    semantic key and merged by month. This preserves split component series such
+    as 股價指數 without accepting unrelated ZIP members or synthetic proxies.
+    """
+    candidates = []
     with zipfile.ZipFile(io.BytesIO(body)) as zf:
-        candidates = []
         for name in zf.namelist():
             if not name.lower().endswith('.csv'):
                 continue
@@ -154,35 +161,65 @@ def rows_from_zip(body):
                 continue
             keys = list(rows[0])
             date_col = find_col(keys, ('Date', '日期', '資料期'))
-            leading = find_col(keys, FIELD_MAP['leading_no_trend'])
-            coincident = find_col(keys, FIELD_MAP['coincident_no_trend'])
-            if not date_col or not leading or not coincident:
+            field_cols = {key: find_col(keys, aliases) for key, aliases in FIELD_MAP.items()}
+            coverage = sum(1 for col in field_cols.values() if col)
+            if not date_col or coverage <= 0:
                 continue
-            coverage = candidate_field_coverage(keys)
-            # Full semantic coverage dominates row count. Existing identity fields
-            # only break ties; row count is deliberately last.
-            identity = sum(
-                1 for aliases in (
-                    FIELD_MAP['leading_composite'], FIELD_MAP['policy_score'], FIELD_MAP['stock_index']
-                ) if find_col(keys, aliases)
-            )
-            candidates.append((coverage, identity, len(rows), name, rows))
-        if not candidates:
-            raise ValueError('NDC ZIP contains no parseable business-cycle CSV with required leading/coincident fields')
-        candidates.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
-        return candidates[0][4]
+            candidates.append((coverage, len(rows), name, rows, date_col, field_cols, _signal_col(keys)))
+
+    if not candidates:
+        raise ValueError('NDC ZIP contains no parseable semantic business-cycle CSV')
+
+    # Richer files are merged first so an explicit wide-table observation wins
+    # over a duplicate value from a narrower component file. Missing values are
+    # then filled by the split files.
+    candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    combined = {}
+    canonical_columns = {'Date'}
+    for coverage, _, name, rows, date_col, field_cols, signal_col in candidates:
+        for semantic_key, source_col in field_cols.items():
+            if source_col:
+                canonical_columns.add(FIELD_MAP[semantic_key][0])
+        if signal_col:
+            canonical_columns.add('景氣對策信號')
+        for row in rows:
+            p = period(row.get(date_col))
+            if not p:
+                continue
+            target = combined.setdefault(p, {'Date': p})
+            for semantic_key, source_col in field_cols.items():
+                if not source_col:
+                    continue
+                raw = row.get(source_col)
+                if raw is None or str(raw).strip() == '':
+                    continue
+                canonical = FIELD_MAP[semantic_key][0]
+                if target.get(canonical) in (None, ''):
+                    target[canonical] = raw
+            if signal_col:
+                raw = row.get(signal_col)
+                if raw is not None and str(raw).strip() and target.get('景氣對策信號') in (None, ''):
+                    target['景氣對策信號'] = raw
+
+    if not combined:
+        raise ValueError('NDC ZIP semantic CSVs contained no parseable monthly observations')
+
+    ordered_columns = ['Date'] + sorted(canonical_columns - {'Date'})
+    merged = []
+    for p in sorted(combined, key=period_key):
+        row = combined[p]
+        merged.append({k: row.get(k, '') for k in ordered_columns})
+    return merged
 
 def parse_signal_rows(rows):
     if not rows:
         raise ValueError('NDC business-cycle CSV empty')
     keys = list(rows[0])
     date_col = find_col(keys, ('Date', '日期', '資料期'))
-    signal_col = next((k for k in keys if k in ('景氣對策信號', '景氣燈號')), None)
-    if not signal_col:
-        signal_col = next((k for k in keys if ('景氣對策信號' in k or '景氣燈號' in k) and '分數' not in k), None)
+    signal_col = _signal_col(keys)
     cols = {key: find_col(keys, aliases) for key, aliases in FIELD_MAP.items()}
     if not date_col or not cols['leading_no_trend'] or not cols['coincident_no_trend']:
-        raise ValueError(f'NDC required columns missing: {keys[:20]}')
+        raise ValueError(f'NDC required columns missing after ZIP merge: {keys[:30]}')
     series = {k: [] for k in FIELD_MAP}
     signals = []
     for row in rows:
@@ -261,7 +298,7 @@ def update(offline=None):
         'latest_period': latest,
         'series': series,
         'signals': signals,
-        'notes': 'NDC states leading, coincident and lagging historical series may be revised on each monthly release.',
+        'notes': 'NDC states leading, coincident and lagging historical series may be revised on each monthly release. Dataset ZIP members are merged semantically by month because published component fields may be split across CSV files.',
     }
     save_json('ndc.json', obj)
     msg = f'NDC leading/coincident/lagging indicators and business signal refreshed; semantic fields={len(series)}'
