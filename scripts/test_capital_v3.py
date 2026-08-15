@@ -15,9 +15,14 @@ assert routes[('balance_sheet','TWSE')].endswith('t187ap07_L_ci')
 assert routes[('monthly_revenue','TPEX')].endswith('mopsfin_t187ap05_O')
 assert routes[('income_statement','TPEX')].endswith('mopsfin_t187ap06_O_ci')
 assert routes[('balance_sheet','TPEX')].endswith('mopsfin_t187ap07_O_ci')
+assert source_security_facts.TPEX_CSV_FALLBACK['income_statement'].endswith('t187ap06_O_ci.csv')
+assert source_security_facts.TPEX_CSV_FALLBACK['balance_sheet'].endswith('t187ap07_O_ci.csv')
 assert all('_P' not in u and '_X' not in u for u in routes.values())
-assert source_security_facts.code({'公司代號':'2330'})=='2330'
-assert source_security_facts.compact('income_statement',{'公司代號':'2330','年度':'115','季別':'2','基本每股盈餘（元）':'12.34'},'TWSE')['eps']==12.34
+assert source_security_facts.code({'\ufeff 公司代號 ':'3081'})=='3081'
+q=source_security_facts.compact('income_statement',{' 公司代號 ':'3081','年度':'115','季別':'2','基本每股盈餘（元）':'12.34','營業收入':'1000'},'TPEX')
+assert q['eps']==12.34 and q['revenue']==1000 and q['period']=='2026-Q2'
+bal=source_security_facts.compact('balance_sheet',{'公司代號':'3081','年度':'115','季別':'2','資產總計':'2000','負債總計':'800','權益總計':'1200'},'TPEX')
+assert bal['assets']==2000 and bal['liabilities']==800 and bal['equity']==1200
 sf=build_security_fact_store.generate();assert any(x['ticker']=='2330' and x['stage']=='BENCHMARK' for x in sf['securities'])
 pm=build_portfolio_model.generate();assert pm['alternative_loadings']['CASH']['TAIWAN_MARKET']==0
 print('CAPITAL V3 TEST PASS')
