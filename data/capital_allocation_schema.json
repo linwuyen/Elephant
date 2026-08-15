@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "required_sections": [
+    "research_queue",
+    "opportunity_set",
+    "probabilistic_returns",
+    "lifecycle",
+    "portfolio_risk",
+    "target_sizing",
+    "guardrails"
+  ],
+  "lifecycle_actions": ["RESEARCH","BUY_REVIEW","ADD_REVIEW","HOLD_REVIEW","TRIM_REVIEW","EXIT_REVIEW"],
+  "portfolio_state_status": ["UNCONFIGURED","COMPLETE"],
+  "note": "Machine-readable minimum contract for Capital Allocation OS v2."
+}
