@@ -49,6 +49,12 @@ def month_period(value):
     if not 1<=month<=12: raise ValueError(f'invalid month: {value!r}')
     return f'{year:04d}-{month:02d}'
 
+def month_gap(newer,older):
+    try:
+        ny,nm=map(int,str(newer).split('-'));oy,om=map(int,str(older).split('-'))
+    except Exception:return 999
+    return (ny-oy)*12+(nm-om)
+
 def decode_resource(body,url):
     if body[:2]==b'PK':
         with zipfile.ZipFile(io.BytesIO(body)) as zf:
@@ -126,19 +132,33 @@ def update(offline=None):
 
     # Required core dataset: current industrial production.
     rows=resource_rows(offline,'moea_industrial_production.csv',URLS['moea_indprod']); total+=len(rows)
-    series=parse(rows,('統計值(指數)','統計值'),('生產指數',))
-    if not series: raise ValueError('MOEA core production parse empty')
-    out['datasets']['moea.industry.production']={'indicator_id':'moea.industry.production_index','name':'工業生產指數','unit':infer_unit(rows,'index_2021_100'),'series':series}
+    production=parse(rows,('統計值(指數)','統計值'),('生產指數',))
+    if not production: raise ValueError('MOEA core production parse empty')
+    out['datasets']['moea.industry.production']={'indicator_id':'moea.industry.production_index','name':'工業生產指數','unit':infer_unit(rows,'index_2021_100'),'series':production}
 
-    # Required current sales index. Offline regression uses the archived official CSV;
-    # live runs use MOEA's current statistics page to avoid retired e.csv/dmz9 endpoints.
+    # EE521 is not a machine-stable transport on GitHub runners. A live failure may
+    # retain only the last-good official MOEA sales series, and only while it is
+    # within the normal publication lag. Beyond two months we fail closed again.
+    sales_refreshed=False
     if offline:
         rows=resource_rows(offline,'moea_manufacturing_sales_volume_index.csv',URLS['moea_sales_volume']); total+=len(rows)
         oldseries=parse(rows,('統計值(指數)','統計值'),('銷售量指數','銷售指數'))
         if not oldseries: raise ValueError('MOEA archived sales-volume parse empty')
         out['datasets']['moea.manufacturing.sales_volume']={'indicator_id':'moea.manufacturing.sales_volume_index','name':'製造業銷售量指數（歷史基期）','unit':infer_unit(rows,'index_2016_100'),'series':oldseries}
+        sales_refreshed=True
     else:
-        out['datasets']['moea.manufacturing.sales_index_current']=live_sales_index()
+        try:
+            out['datasets']['moea.manufacturing.sales_index_current']=live_sales_index()
+            sales_refreshed=True
+        except Exception as e:
+            prod_data=production.get('C',{}).get('data',[])
+            retained=out['datasets'].get('moea.manufacturing.sales_index_current',{}).get('series',{}).get('C',{}).get('data',[])
+            prod_period=str(prod_data[-1][0]) if prod_data else None
+            sales_period=str(retained[-1][0]) if retained else None
+            gap=month_gap(prod_period,sales_period) if prod_period and sales_period else 999
+            if not retained or gap<0 or gap>2:
+                raise RuntimeError(f'MOEA sales live transport failed and last-good series is not current enough: production={prod_period}, sales={sales_period}, gap={gap}') from e
+            warnings.append(f'current sales live transport unavailable; retained last-good official MOEA sales {sales_period} within {gap}-month freshness window ({type(e).__name__}: {e})')
 
     # Supplemental legacy datasets: preserve the last good copy if MOEA retires the old download URL.
     try:
@@ -169,6 +189,8 @@ def update(offline=None):
         warnings.append(f'investment legacy endpoint unavailable; retained last-good copy ({type(e).__name__})')
 
     save_json('industry.json',out)
-    message='MOEA core production + current sales index refreshed'
+    message='MOEA core production refreshed'
+    if sales_refreshed: message+='; current sales index refreshed'
+    else: message+='; sales HTML transport unavailable, fresh last-good official series retained'
     if warnings: message+='; warnings: '+'; '.join(warnings)
     return {'latest_period':max_period(out),'rows':total,'message':message,'warnings':warnings}
