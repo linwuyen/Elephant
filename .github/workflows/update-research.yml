@@ -70,10 +70,17 @@ jobs:
           PY
 
       - name: Rebuild cross-source intelligence and research claims
+        shell: bash
         run: |
+          journal_before=$(sha256sum data/decision_journal.json | awk '{print $1}')
           python scripts/build_ai_concentration.py
           python scripts/build_intelligence_layer.py
           python scripts/build_decision_engine.py --no-journal
+          # Research-only refreshes may rebuild derived context but are not allowed
+          # to mutate the prospective decision journal.
+          git restore -- data/decision_journal.json
+          journal_after=$(sha256sum data/decision_journal.json | awk '{print $1}')
+          test "$journal_before" = "$journal_after"
           python scripts/validate_decision_scores.py
           python scripts/validate_intelligence_layer.py
 
