@@ -75,6 +75,7 @@ jobs:
           python scripts/validate_structural_layers.py
           python scripts/test_model_validation.py
           python scripts/test_source_supplements.py
+          python scripts/test_moea_live_tables.py
           python scripts/validate_intelligence_layer.py
           python scripts/validate_investment.py
           python scripts/test_investment_integration.py
@@ -111,6 +112,7 @@ jobs:
           python scripts/validate_structural_layers.py
           python scripts/test_model_validation.py
           python scripts/test_source_supplements.py
+          python scripts/test_moea_live_tables.py
           python scripts/validate_intelligence_layer.py
       - name: Build latest investment, Capital OS and Decision Engine layers for Pages artifact
         run: |
