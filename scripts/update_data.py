@@ -17,6 +17,7 @@ import build_intelligence_layer
 import build_investment
 import build_vintage
 import build_decision_engine
+import build_decision_engine_v2
 import revision_tracker
 import source_macro
 import source_moea
@@ -99,7 +100,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 14,
+        'pipeline_version': 15,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -135,7 +136,11 @@ def main():
     build_structural_layers.generate()
     build_investment.generate()
     build_intelligence_layer.generate()
+    # v1 remains authoritative. v2 is generated strictly downstream as a
+    # challenger/validation artifact and has no write path back into scores,
+    # Risk Budget, Alpha actions, or portfolio policy.
     build_decision_engine.generate(append_journal=True)
+    build_decision_engine_v2.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
