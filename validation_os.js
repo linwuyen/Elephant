@@ -4,6 +4,14 @@
   const signed=v=>v==null?'—':`${Number(v)>=0?'+':''}${Number(v).toFixed(1)}`;
   const names={cycle:'Cycle',growth_persistence:'Growth Persistence',domestic_demand:'Domestic Demand',financial_conditions:'Financial Conditions',ai_concentration:'AI Concentration'};
 
+  function loadCommandCenter(){
+    if(!document.querySelector('link[data-elephant-command-center-style]')){
+      const l=document.createElement('link');l.rel='stylesheet';l.href='command_center.css';l.dataset.elephantCommandCenterStyle='1';document.head.appendChild(l);
+    }
+    if(!document.querySelector('script[data-elephant-command-center]')){
+      const s=document.createElement('script');s.src='command_center.js';s.defer=true;s.dataset.elephantCommandCenter='1';document.head.appendChild(s);
+    }
+  }
   function addStyle(){
     if(document.querySelector('link[data-elephant-validation-os-style]'))return;
     const l=document.createElement('link');l.rel='stylesheet';l.href='validation_os.css';l.dataset.elephantValidationOsStyle='1';document.head.appendChild(l);
@@ -34,7 +42,7 @@
     anchor.insertAdjacentElement('afterend',node);return true;
   }
   async function init(){
-    addStyle();
+    addStyle();loadCommandCenter();
     try{
       const x=Date.now();
       const [os,journal]=await Promise.all([
