@@ -3,7 +3,7 @@ name: Refresh consultant research
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 2 * * *' # 10:17 Asia/Taipei, after Consultant_System 09:17 refresh
+    - cron: '17 2 * * *' # 10:17 Asia/Taipei; manifest validation makes correctness independent of timing
   push:
     branches: [main]
     paths:
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -42,23 +42,32 @@ jobs:
           git reset --hard origin/main
           echo "Writer base: $(git rev-parse HEAD)"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
-      - name: Sync Consultant_System artifacts
+      - name: Sync Consultant_System artifacts through manifest contract
         run: python scripts/sync_consultant_research.py
 
-      - name: Verify synced SQLite and research contract
+      - name: Verify synced SQLite, manifest and research contract
         run: |
           python - <<'PY'
           import json, sqlite3
           from pathlib import Path
 
           status = json.loads(Path('data/consultant/status.json').read_text(encoding='utf-8'))
-          assert status['status'] == 'ok'
+          manifest = json.loads(Path('data/consultant/manifest.json').read_text(encoding='utf-8'))
+          source_health = json.loads(Path('data/consultant/source_health.json').read_text(encoding='utf-8'))
+          assert status['status'] in {'ok', 'degraded'}
           assert status['coverage_complete'] is True
           assert status['score_influence'] is False
+          assert status['upstream_schema_version'] == 2
+          assert status['upstream_snapshot_id'] == manifest['snapshot_id']
+          assert status['upstream_health'] == manifest['overall_health']
+          assert status['upstream_health'] in {'healthy', 'degraded'}
+          assert manifest['contract'] == 'research-context-only'
+          assert manifest['score_influence'] is False
+          assert source_health.get('sources')
           assert status['reports'] >= 10
           companies = status.get('companies') or {}
           assert all(companies.get(c, 0) >= 3 for c in ('McKinsey','BCG','Deloitte','PwC')), companies
@@ -66,11 +75,12 @@ jobs:
           con = sqlite3.connect('data/consultant/consultant.db')
           assert con.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
           tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-          assert {'reports', 'topics', 'report_topics', 'sources', 'meta'} <= tables
+          assert {'reports', 'topics', 'report_topics', 'sources', 'source_health', 'meta'} <= tables
+          assert con.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '2'
           rows = con.execute('SELECT COUNT(*) FROM reports').fetchone()[0]
           assert rows == status['reports'], (rows, status['reports'])
           con.close()
-          print('Consultant research integration PASS:', status['reports'], 'reports', companies)
+          print('Consultant research integration PASS:', status['upstream_health'], status['reports'], 'reports', companies)
           PY
 
       - name: Rebuild cross-source intelligence and research claims
