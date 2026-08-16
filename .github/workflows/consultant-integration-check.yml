@@ -19,29 +19,41 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
 
-      - name: Pull live Consultant_System artifacts
+      - name: Pull live Consultant_System snapshot through manifest contract
         run: python scripts/sync_consultant_research.py
 
-      - name: Validate SQLite snapshot
+      - name: Validate SQLite snapshot and upstream health propagation
         run: |
           python - <<'PY'
           import json, sqlite3
           from pathlib import Path
           status = json.loads(Path('data/consultant/status.json').read_text(encoding='utf-8'))
+          manifest = json.loads(Path('data/consultant/manifest.json').read_text(encoding='utf-8'))
+          health = json.loads(Path('data/consultant/source_health.json').read_text(encoding='utf-8'))
+          assert status['status'] in {'ok', 'degraded'}
+          assert status['upstream_health'] in {'healthy', 'degraded'}
+          assert status['upstream_health'] == manifest['overall_health']
+          assert status['upstream_snapshot_id'] == manifest['snapshot_id']
+          assert status['upstream_schema_version'] == 2
+          assert manifest['schema_version'] == 2
+          assert manifest['contract'] == 'research-context-only'
+          assert manifest['score_influence'] is False
           assert status['score_influence'] is False
           assert status['reports'] >= 10
+          assert health.get('sources')
           con = sqlite3.connect('data/consultant/consultant.db')
           assert con.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
           tables = {x[0] for x in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-          assert {'reports','topics','report_topics','sources','meta'} <= tables
+          assert {'reports','topics','report_topics','sources','source_health','meta'} <= tables
+          assert con.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '2'
           assert con.execute('SELECT COUNT(*) FROM reports').fetchone()[0] == status['reports']
           con.close()
           print(json.dumps(status, ensure_ascii=False, indent=2))
