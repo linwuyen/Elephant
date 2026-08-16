@@ -27,9 +27,15 @@ const Research = (() => {
     ];
     q('#researchStats').innerHTML = cards.map(([k,v]) => `<div class="research-stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
     const st = state.status;
-    q('#researchMeta').textContent = st
-      ? `來源 Consultant_System · 上游更新 ${st.source_updated_at || '—'} · Elephant 同步 ${st.synced_at || '—'}`
-      : '來源 Consultant_System';
+    if (!st) {
+      q('#researchMeta').textContent = '來源 Consultant_System';
+      return;
+    }
+    const health = String(st.upstream_health || st.status || 'unknown').toUpperCase();
+    const companyHealth = Object.entries(st.company_health || {})
+      .map(([company, row]) => `${company}:${String(row?.ingestion_status || 'unknown').toUpperCase()}`)
+      .join(' · ');
+    q('#researchMeta').textContent = `來源 Consultant_System · 上游 ${health} · ${companyHealth || '無公司健康資訊'} · Snapshot ${st.upstream_snapshot_id || '—'} · 上游更新 ${st.source_updated_at || '—'} · Elephant 同步 ${st.synced_at || '—'}`;
   }
 
   function applyFilters() {
