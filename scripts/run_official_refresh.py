@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess,sys
 
 COMMANDS=[
- ['python','-m','py_compile','scripts/common.py','scripts/update_data.py','scripts/source_opportunity.py','scripts/source_security_facts.py','scripts/source_moea_dataset.py','scripts/source_twse_market_live.py','scripts/refresh_capital.py','scripts/build_risk_budget_v2.py','scripts/build_risk_budget_v2_availability.py','scripts/build_validation_os.py','scripts/build_validation_os_v1_1.py','scripts/build_decision_command.py'],
+ ['python','-m','py_compile','scripts/common.py','scripts/update_data.py','scripts/source_opportunity.py','scripts/source_security_facts.py','scripts/source_moea_dataset.py','scripts/source_twse_market_live.py','scripts/refresh_capital.py','scripts/capital_allocation.py','scripts/build_shadow_book.py','scripts/build_capital_decision_journal.py','scripts/build_opportunity_models.py','scripts/build_risk_budget_v2.py','scripts/build_risk_budget_v2_availability.py','scripts/build_validation_os.py','scripts/build_validation_os_v1_1.py','scripts/build_decision_command.py'],
  ['python','scripts/update_data.py'],
  ['python','scripts/source_opportunity.py'],
  ['python','scripts/source_security_facts.py'],
