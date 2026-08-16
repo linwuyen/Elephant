@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "status": "UNCONFIGURED",
   "storage_policy": "BROWSER_LOCAL_ONLY",
   "as_of": null,
@@ -10,5 +10,9 @@
   "debt_effective_rate_pct": null,
   "positions": [],
   "human_capital_factor": null,
-  "note": "Public repository sentinel only. Never commit personal holdings, debt or leverage here. Personalized inputs belong in browser localStorage; server-side Capital OS stays fail-closed."
+  "monthly_required_cashflow_twd": null,
+  "minimum_liquidity_buffer_months": null,
+  "pledged_collateral_twd": null,
+  "broker_maintenance_threshold_pct": null,
+  "note": "Public repository sentinel only. Never commit personal holdings, debt, leverage, collateral or maintenance rules here. Personalized inputs belong in browser localStorage; server-side Capital OS stays fail-closed."
 }
