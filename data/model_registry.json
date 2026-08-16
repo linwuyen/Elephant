@@ -35,6 +35,7 @@
     "horizons_days": {"3m":90,"6m":180,"12m":365},
     "primary_security_kpi": "realized_opportunity_cost_alpha_vs_tsmc",
     "decision_regret_scope": "TSMC_ONLY_UNTIL_ALL_ALTERNATIVE_POINT_IN_TIME_PRICES_EXIST",
+    "minimum_samples_for_model_change": 30,
     "authority": "CALIBRATION_ONLY"
   },
   "capital_decision_journal": {
