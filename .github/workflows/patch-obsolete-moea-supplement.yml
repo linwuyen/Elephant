@@ -1,0 +1,66 @@
+name: One-shot MOEA supplement cleanup
+
+on:
+  push:
+    branches:
+      - agent/remove-obsolete-moea-supplement
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/remove-obsolete-moea-supplement
+      - name: Remove obsolete inventory supplement fetch and add regression
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/source_supplements.py')
+          text = path.read_text(encoding='utf-8')
+          old_task = "        ('inventory_index', INVENTORY_URL),\n"
+          if old_task not in text:
+              raise SystemExit('obsolete inventory task not found')
+          text = text.replace(old_task, '', 1)
+
+          old_block = """    if 'inventory_index' in bodies:\n        try:\n            parsed = parse_inventory_index(bodies['inventory_index'])\n            patch.update(parsed)\n            rows += sum(len(x['data']) for x in parsed.values())\n            catalogs['inventory_index'] = INVENTORY_CATALOG\n        except Exception as exc:\n            warnings.append(f'inventory_index_parse: {type(exc).__name__}: {exc}')\n\n"""
+          if old_block not in text:
+              raise SystemExit('obsolete inventory parse block not found')
+          text = text.replace(old_block, '', 1)
+
+          old_note = "Verified-TLS supplements: MOEA manufacturing inventory index + dedicated electronic/ICT export orders + DGBAS XML with official www.dgbas.gov.tw salary/productivity-news fallback."
+          new_note = "Verified-TLS supplements: dedicated electronic/ICT export orders + DGBAS XML with official www.dgbas.gov.tw salary/productivity-news fallback. Canonical manufacturing inventory is owned by the EE521 no=6 live-table source."
+          if old_note not in text:
+              raise SystemExit('supplement note not found')
+          text = text.replace(old_note, new_note, 1)
+          path.write_text(text, encoding='utf-8')
+
+          test = Path('scripts/test_source_supplements.py')
+          t = test.read_text(encoding='utf-8')
+          if 'import inspect\n' not in t:
+              t = t.replace('#!/usr/bin/env python3\n', '#!/usr/bin/env python3\nimport inspect\n', 1)
+          marker = 'import source_supplements as ss\n\n'
+          assertion = "# The I1-I4 data.gov inventory dataset is segment evidence only; the supplement updater\n# must never fetch it as a manufacturing-total replacement for canonical EE521 no=6.\nassert ss.INVENTORY_URL not in inspect.getsource(ss.update)\n\n"
+          if assertion not in t:
+              if marker not in t:
+                  raise SystemExit('test import marker not found')
+              t = t.replace(marker, marker + assertion, 1)
+          test.write_text(t, encoding='utf-8')
+          PY
+      - name: Verify focused regression
+        run: |
+          python -m py_compile scripts/source_supplements.py scripts/test_source_supplements.py
+          PYTHONPATH=scripts python scripts/test_source_supplements.py
+      - name: Commit patch and self-remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/patch-obsolete-moea-supplement.yml
+          git add scripts/source_supplements.py scripts/test_source_supplements.py
+          git commit -m 'fix: remove obsolete MOEA inventory supplement fetch'
+          git push origin HEAD:agent/remove-obsolete-moea-supplement
