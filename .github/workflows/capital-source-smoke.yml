@@ -53,22 +53,19 @@ jobs:
           import source_moea_dataset
 
           # Exercise the official data.gov metadata -> MOEA resource path independently
-          # from the longer official-data writer. Transport access and parse semantics
-          # are both contractual: a stale last-good file must not make this smoke pass.
-          raw_rows,raw_url=source_moea_dataset.dataset_rows(source_moea_dataset.SALES_DATASET)
-          sample_fields=('統計項目','項目','行業代碼','產業代碼','代碼','行業別','產業別','行業名稱','資料期(民國年)','資料期','年月','年月份','統計值(指數)','統計值')
-          print('MOEA SALES DIAG', {
-              'source_url':raw_url,
-              'row_count':len(raw_rows),
-              'columns':list(raw_rows[0].keys()) if raw_rows else [],
-              'samples':[{k:r.get(k) for k in sample_fields if k in r} for r in raw_rows[:12]],
-          })
+          # from the longer official-data writer. Datasets 95141 and 109753 are scoped to
+          # four major manufacturing industries, so validate I1-I4 directly and never
+          # fabricate a synthetic manufacturing-total C series.
+          required=set(source_moea_dataset.MAJOR_INDUSTRIES)
           sales=source_moea_dataset.sales_index()
-          total=(sales.get('series') or {}).get('C') or {}
-          assert len(total.get('data') or []) >= 5, sales
-          inv_rows,inv_url=source_moea_dataset.dataset_rows(source_moea_dataset.INVENTORY_DATASET)
-          assert len(inv_rows) >= 10, (len(inv_rows),inv_url)
-          assert any(host in inv_url.lower() for host in ('moea.gov.tw','data.gov.tw','data.nat.gov.tw')), inv_url
+          assert required <= set(sales.get('series') or {}), sales
+          assert all(len(sales['series'][code].get('data') or []) >= 5 for code in required), sales
+          inventory=source_moea_dataset.inventory_index()
+          assert required <= set(inventory.get('series') or {}), inventory
+          assert all(len(inventory['series'][code].get('data') or []) >= 13 for code in required), inventory
+          for obj in (sales,inventory):
+              url=(obj.get('source_url') or '').lower()
+              assert any(host in url for host in ('moea.gov.tw','data.gov.tw','data.nat.gov.tw')), url
 
           sec=json.loads(Path('data/security_official_facts.json').read_text(encoding='utf-8'))
           cov=sec.get('coverage') or {}
@@ -90,5 +87,10 @@ jobs:
               comp=row.get('research_completeness') or {}
               if comp.get('cash_flow_status')=='MISSING_DEDICATED_CASH_FLOW_EVIDENCE':
                   assert 'balance_sheet_cash_flow' in (comp.get('missing') or []), row.get('ticker')
-          print('CAPITAL SOURCE SMOKE PASS', {'moea_sales_source':sales.get('source_url'),'inventory_source':inv_url,'security_coverage':cov})
+          print('CAPITAL SOURCE SMOKE PASS', {
+              'moea_sales_source':sales.get('source_url'),
+              'moea_inventory_source':inventory.get('source_url'),
+              'moea_major_industries':sorted(required),
+              'security_coverage':cov,
+          })
           PY
