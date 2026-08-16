@@ -20,6 +20,7 @@ import build_decision_engine
 import build_decision_engine_v2
 import build_risk_budget_v2_availability
 import build_validation_os_v1_1
+import build_decision_command
 import revision_tracker
 import source_macro
 import source_moea
@@ -103,7 +104,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 18,
+        'pipeline_version': 19,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -142,6 +143,9 @@ def main():
     # Validation OS v1.1 compares Score champion/challenger only on paired common
     # months and identical future outcomes. Evidence remains downstream-only.
     build_validation_os_v1_1.generate(append_journal=True)
+    # Command Center is the final presentation/policy compiler. It creates no new
+    # authority and only translates already-published Macro/Risk/Alpha/Validation evidence.
+    build_decision_command.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
