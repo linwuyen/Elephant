@@ -107,11 +107,31 @@ realized security price return - realized TSMC price return
 
 Current decision-regret scope is explicitly `TSMC_ONLY` until point-in-time prices for every alternative are available.
 
-## 8. Capital Decision Journal
+## 8. Security Calibration
+
+`data/security_calibration.json` is deterministically rebuilt from only the primary Shadow Book pointers. It reports:
+
+- 3M / 6M / 12M realized Alpha
+- forecast error
+- regret versus TSMC
+- direction hit rate
+- Alpha Score buckets
+- predicted-Alpha buckets
+
+The model-change floor is 30 resolved primary observations. Below that threshold the artifact must remain:
+
+```text
+status = INSUFFICIENT_HISTORY
+model_change_allowed = false
+```
+
+This prevents early attractive or ugly outcomes from silently changing weights or scenario probabilities.
+
+## 9. Capital Decision Journal
 
 `data/capital_decision_journal.json` separates immutable decision snapshots, same-period model/input revisions and one primary snapshot pointer per ISO decision week. Only primary pointers enter the primary decision cohort. Repeated debug/rerun snapshots cannot inflate sample size.
 
-## 9. Calibration order
+## 10. Calibration order
 
 Elephant now accumulates three distinct learning loops:
 
