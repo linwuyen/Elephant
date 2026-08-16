@@ -1,28 +1,62 @@
 {
   "status": "ok",
   "coverage_complete": true,
-  "synced_at": "2026-08-16T06:27:08Z",
+  "upstream_health": "healthy",
+  "upstream_snapshot_id": "3e3cf02750432f6d",
+  "upstream_schema_version": 2,
+  "synced_at": "2026-08-16T07:03:37Z",
   "source_repo": "linwuyen/Consultant_System",
-  "source_updated_at": "2026-08-16T06:18:23Z",
-  "reports": 59,
+  "source_generated_at": "2026-08-16T06:59:55Z",
+  "source_updated_at": "2026-08-16T06:59:18Z",
+  "reports": 60,
   "latest_date": "2026-08-14",
   "companies": {
-    "McKinsey": 4,
+    "McKinsey": 5,
     "BCG": 13,
     "Deloitte": 37,
     "PwC": 5
   },
+  "company_health": {
+    "McKinsey": {
+      "records": 5,
+      "latest_publication": "2026-07-30",
+      "ingestion_status": "healthy",
+      "observed_count": 5,
+      "last_success_at": "2026-08-16T06:59:18Z"
+    },
+    "BCG": {
+      "records": 13,
+      "latest_publication": "2026-08-14",
+      "ingestion_status": "healthy",
+      "observed_count": 6,
+      "last_success_at": "2026-08-16T06:59:18Z"
+    },
+    "Deloitte": {
+      "records": 37,
+      "latest_publication": "2026-08-10",
+      "ingestion_status": "healthy",
+      "observed_count": 33,
+      "last_success_at": "2026-08-16T06:58:30Z"
+    },
+    "PwC": {
+      "records": 5,
+      "latest_publication": "2026-06-23",
+      "ingestion_status": "healthy",
+      "observed_count": 6,
+      "last_success_at": "2026-08-16T06:58:30Z"
+    }
+  },
   "minimum_reports_per_company": 3,
   "topics": {
-    "AI": 29,
+    "AI": 30,
     "Strategy": 10,
     "Economics": 9,
     "Workforce": 7,
     "Supply Chain": 6,
     "Semiconductor": 4,
+    "Data Center": 3,
     "Manufacturing": 3,
-    "Data Center": 2,
-    "Energy": 1
+    "Energy": 2
   },
   "contract": "research-context-only",
   "score_influence": false
