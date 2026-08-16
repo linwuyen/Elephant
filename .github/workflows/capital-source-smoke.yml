@@ -55,6 +55,14 @@ jobs:
           # Exercise the official data.gov metadata -> MOEA resource path independently
           # from the longer official-data writer. Transport access and parse semantics
           # are both contractual: a stale last-good file must not make this smoke pass.
+          raw_rows,raw_url=source_moea_dataset.dataset_rows(source_moea_dataset.SALES_DATASET)
+          sample_fields=('統計項目','項目','行業代碼','產業代碼','代碼','行業別','產業別','行業名稱','資料期(民國年)','資料期','年月','年月份','統計值(指數)','統計值')
+          print('MOEA SALES DIAG', {
+              'source_url':raw_url,
+              'row_count':len(raw_rows),
+              'columns':list(raw_rows[0].keys()) if raw_rows else [],
+              'samples':[{k:r.get(k) for k in sample_fields if k in r} for r in raw_rows[:12]],
+          })
           sales=source_moea_dataset.sales_index()
           total=(sales.get('series') or {}).get('C') or {}
           assert len(total.get('data') or []) >= 5, sales
