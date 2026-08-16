@@ -1,9 +1,9 @@
 {
   "status": "ok",
   "coverage_complete": true,
-  "synced_at": "2026-08-16T03:15:32Z",
+  "synced_at": "2026-08-16T06:19:10Z",
   "source_repo": "linwuyen/Consultant_System",
-  "source_updated_at": "2026-08-16T02:36:21Z",
+  "source_updated_at": "2026-08-16T06:18:23Z",
   "reports": 59,
   "latest_date": "2026-08-14",
   "companies": {
@@ -14,8 +14,8 @@
   },
   "minimum_reports_per_company": 3,
   "topics": {
-    "AI": 27,
-    "Strategy": 11,
+    "AI": 29,
+    "Strategy": 10,
     "Economics": 9,
     "Workforce": 7,
     "Supply Chain": 6,
