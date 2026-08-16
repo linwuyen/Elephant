@@ -9,6 +9,7 @@ on:
     paths:
       - 'scripts/source_opportunity.py'
       - 'scripts/source_security_facts.py'
+      - 'scripts/source_moea_dataset.py'
       - 'scripts/build_opportunity_models.py'
       - 'scripts/build_security_fact_store.py'
       - '.github/workflows/capital-source-smoke.yml'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'scripts/source_opportunity.py'
       - 'scripts/source_security_facts.py'
+      - 'scripts/source_moea_dataset.py'
       - 'scripts/build_opportunity_models.py'
       - 'scripts/build_security_fact_store.py'
       - '.github/workflows/capital-source-smoke.yml'
@@ -34,7 +36,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Syntax
-        run: python -m py_compile scripts/source_opportunity.py scripts/source_security_facts.py scripts/build_opportunity_models.py scripts/build_security_fact_store.py
+        run: python -m py_compile scripts/source_opportunity.py scripts/source_security_facts.py scripts/source_moea_dataset.py scripts/build_opportunity_models.py scripts/build_security_fact_store.py
       - name: Fetch live capital sources in workspace only
         run: |
           python scripts/source_opportunity.py
@@ -46,6 +48,17 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+          import source_moea_dataset
+
+          # Exercise the official data.gov metadata -> MOEA resource path independently
+          # from the longer official-data writer. Transport access and parse semantics
+          # are both contractual: a stale last-good file must not make this smoke pass.
+          sales=source_moea_dataset.sales_index()
+          total=(sales.get('series') or {}).get('C') or {}
+          assert len(total.get('data') or []) >= 5, sales
+          inv_rows,inv_url=source_moea_dataset.dataset_rows(source_moea_dataset.INVENTORY_DATASET)
+          assert len(inv_rows) >= 10, (len(inv_rows),inv_url)
+          assert any(host in inv_url.lower() for host in ('moea.gov.tw','data.gov.tw','data.nat.gov.tw')), inv_url
 
           sec=json.loads(Path('data/security_official_facts.json').read_text(encoding='utf-8'))
           cov=sec.get('coverage') or {}
@@ -67,5 +80,5 @@ jobs:
               comp=row.get('research_completeness') or {}
               if comp.get('cash_flow_status')=='MISSING_DEDICATED_CASH_FLOW_EVIDENCE':
                   assert 'balance_sheet_cash_flow' in (comp.get('missing') or []), row.get('ticker')
-          print('CAPITAL SOURCE SMOKE PASS', cov)
+          print('CAPITAL SOURCE SMOKE PASS', {'moea_sales_source':sales.get('source_url'),'inventory_source':inv_url,'security_coverage':cov})
           PY
