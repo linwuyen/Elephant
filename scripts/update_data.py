@@ -24,7 +24,7 @@ import build_decision_command
 import revision_tracker
 import source_macro
 import source_moea
-import source_moea_dataset
+import source_moea_live_tables
 import source_ndc
 import source_ris
 import source_decision
@@ -110,7 +110,10 @@ def main():
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
-    source_moea.live_sales_index = source_moea_dataset.sales_index
+    # Canonical manufacturing-total sales/inventory must come from the official
+    # current-statistics tables, where C is explicitly published. The data.gov
+    # datasets 95141/109753 are I1-I4 segment datasets and must never overwrite C.
+    source_moea.live_sales_index = source_moea_live_tables.live_sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
     refresh_source(status, bad, 'ndc', source_ndc.update, a.offline_dir, True)
@@ -118,7 +121,7 @@ def main():
     refresh_source(status, bad, 'decision', source_decision.update, a.offline_dir, False)
     refresh_source(status, bad, 'ai_concentration_inputs', source_ai_concentration.update, a.offline_dir, False)
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
-    refresh_source(status, bad, 'inventory_manufacturing', source_moea_dataset.update_inventory, a.offline_dir, False)
+    refresh_source(status, bad, 'inventory_manufacturing', source_moea_live_tables.update_inventory, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
     status['sources']['segis'] = segis(bool(a.offline_dir))
     status['critical_failures'] = bad
