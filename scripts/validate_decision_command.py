@@ -74,10 +74,16 @@ def main():
     for key in forbidden:
         assert f"'{key}':" not in text and f'"{key}":' not in text,key
 
+    governance=load_json('model_governance.json',{})
+    command_fp=(governance.get('artifacts') or {}).get('decision_command.json') or {}
+    assert command_fp.get('fingerprint') and len(command_fp['fingerprint'])==64,'decision_command governance fingerprint missing'
+    assert command_fp.get('version')==obj.get('version'),'decision_command governance version mismatch'
+
     print('DECISION COMMAND CENTER VALIDATION PASS')
     print('command:',command.get('code'),'-',command.get('title'))
     print('zone:',alloc.get('operating_zone_equity_pct'))
     print('confidence:',command.get('decision_confidence'))
     print('counterfactuals:',len((cf.get('scenarios') or [])))
+    print('governance fingerprint:',command_fp.get('fingerprint'))
 
 if __name__=='__main__':main()
