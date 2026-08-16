@@ -9,7 +9,10 @@ on:
     paths:
       - 'scripts/source_opportunity.py'
       - 'scripts/source_security_facts.py'
+      - 'scripts/source_moea.py'
       - 'scripts/source_moea_dataset.py'
+      - 'scripts/source_moea_live_tables.py'
+      - 'scripts/update_data.py'
       - 'scripts/build_opportunity_models.py'
       - 'scripts/build_security_fact_store.py'
       - '.github/workflows/capital-source-smoke.yml'
@@ -18,7 +21,10 @@ on:
     paths:
       - 'scripts/source_opportunity.py'
       - 'scripts/source_security_facts.py'
+      - 'scripts/source_moea.py'
       - 'scripts/source_moea_dataset.py'
+      - 'scripts/source_moea_live_tables.py'
+      - 'scripts/update_data.py'
       - 'scripts/build_opportunity_models.py'
       - 'scripts/build_security_fact_store.py'
       - '.github/workflows/capital-source-smoke.yml'
@@ -36,7 +42,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Syntax
-        run: python -m py_compile scripts/source_opportunity.py scripts/source_security_facts.py scripts/source_moea_dataset.py scripts/build_opportunity_models.py scripts/build_security_fact_store.py
+        run: python -m py_compile scripts/source_opportunity.py scripts/source_security_facts.py scripts/source_moea.py scripts/source_moea_dataset.py scripts/source_moea_live_tables.py scripts/update_data.py scripts/build_opportunity_models.py scripts/build_security_fact_store.py
       - name: Fetch live capital sources in workspace only
         run: |
           python scripts/source_opportunity.py
@@ -51,21 +57,32 @@ jobs:
           import json
           from pathlib import Path
           import source_moea_dataset
+          import source_moea_live_tables
 
-          # Exercise the official data.gov metadata -> MOEA resource path independently
-          # from the longer official-data writer. Datasets 95141 and 109753 are scoped to
-          # four major manufacturing industries, so validate I1-I4 directly and never
-          # fabricate a synthetic manufacturing-total C series.
+          # Contract A: data.gov datasets 95141/109753 publish four major
+          # manufacturing industries. Validate I1-I4 directly; never synthesize C.
           required=set(source_moea_dataset.MAJOR_INDUSTRIES)
-          sales=source_moea_dataset.sales_index()
-          assert required <= set(sales.get('series') or {}), sales
-          assert all(len(sales['series'][code].get('data') or []) >= 5 for code in required), sales
-          inventory=source_moea_dataset.inventory_index()
-          assert required <= set(inventory.get('series') or {}), inventory
-          assert all(len(inventory['series'][code].get('data') or []) >= 13 for code in required), inventory
-          for obj in (sales,inventory):
+          segment_sales=source_moea_dataset.sales_index()
+          assert required <= set(segment_sales.get('series') or {}), segment_sales
+          assert all(len(segment_sales['series'][code].get('data') or []) >= 5 for code in required), segment_sales
+          segment_inventory=source_moea_dataset.inventory_index()
+          assert required <= set(segment_inventory.get('series') or {}), segment_inventory
+          assert all(len(segment_inventory['series'][code].get('data') or []) >= 13 for code in required), segment_inventory
+          for obj in (segment_sales,segment_inventory):
               url=(obj.get('source_url') or '').lower()
               assert any(host in url for host in ('moea.gov.tw','data.gov.tw','data.nat.gov.tw')), url
+
+          # Contract B: the EE521 current-statistics tables explicitly publish the
+          # manufacturing total C. Production health depends on these true totals.
+          total_sales=source_moea_live_tables.live_sales_index()
+          c=(total_sales.get('series') or {}).get('C') or {}
+          assert len(c.get('data') or []) >= 5, total_sales
+          total_inventory=source_moea_live_tables.parse_inventory(
+              source_moea_live_tables.request_bytes(source_moea_live_tables.INVENTORY_URL,60,3)[0]
+          )
+          assert len(total_inventory.get('data') or []) >= 13, total_inventory
+          assert total_sales.get('source_url') == source_moea_live_tables.SALES_URL
+          assert total_inventory.get('source_url') == source_moea_live_tables.INVENTORY_URL
 
           sec=json.loads(Path('data/security_official_facts.json').read_text(encoding='utf-8'))
           cov=sec.get('coverage') or {}
@@ -88,9 +105,13 @@ jobs:
               if comp.get('cash_flow_status')=='MISSING_DEDICATED_CASH_FLOW_EVIDENCE':
                   assert 'balance_sheet_cash_flow' in (comp.get('missing') or []), row.get('ticker')
           print('CAPITAL SOURCE SMOKE PASS', {
-              'moea_sales_source':sales.get('source_url'),
-              'moea_inventory_source':inventory.get('source_url'),
+              'moea_segment_sales_source':segment_sales.get('source_url'),
+              'moea_segment_inventory_source':segment_inventory.get('source_url'),
               'moea_major_industries':sorted(required),
+              'moea_total_sales_source':total_sales.get('source_url'),
+              'moea_total_inventory_source':total_inventory.get('source_url'),
+              'moea_total_sales_latest':c['data'][-1][0],
+              'moea_total_inventory_latest':total_inventory['data'][-1][0],
               'security_coverage':cov,
           })
           PY
