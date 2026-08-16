@@ -44,6 +44,8 @@ jobs:
           python scripts/build_opportunity_models.py
           python scripts/build_security_fact_store.py
       - name: Enforce live coverage
+        env:
+          PYTHONPATH: scripts
         run: |
           python - <<'PY'
           import json
