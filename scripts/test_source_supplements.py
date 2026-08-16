@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
+import inspect
 import build_decision_scores as bds
 import source_inventory as si
 import source_moea as sm
 import source_moea_live as sml
 import source_supplements as ss
+
+# The I1-I4 data.gov inventory dataset is segment evidence only; the supplement updater
+# must never fetch it as a manufacturing-total replacement for canonical EE521 no=6.
+assert ss.INVENTORY_URL not in inspect.getsource(ss.update)
 
 
 def monthly_rows(header, row_fn, months=30):

@@ -288,7 +288,7 @@ def _merge_into_decision(series_patch, catalogs_patch):
     )
     obj['latest_period'] = latest
     notes = list(obj.get('supplement_notes', []))
-    note = 'Verified-TLS supplements: MOEA manufacturing inventory index + dedicated electronic/ICT export orders + DGBAS XML with official www.dgbas.gov.tw salary/productivity-news fallback.'
+    note = 'Verified-TLS supplements: dedicated electronic/ICT export orders + DGBAS XML with official www.dgbas.gov.tw salary/productivity-news fallback. Canonical manufacturing inventory is owned by the EE521 no=6 live-table source.'
     if note not in notes:
         notes.append(note)
     obj['supplement_notes'] = notes[-20:]
@@ -328,7 +328,6 @@ def update(offline=None):
     transports = {}
     rows = 0
     tasks = [
-        ('inventory_index', INVENTORY_URL),
         ('electronic_orders', ELECTRONIC_ORDERS_URL),
         ('ict_orders', ICT_ORDERS_URL),
         ('dgbas_wage_retry', DGBAS_WAGE_URL),
@@ -343,15 +342,6 @@ def update(offline=None):
         except Exception as exc:
             target = dgbas_errors if key.startswith('dgbas_') else warnings
             target.append(f'{key}: {type(exc).__name__}: {exc}')
-
-    if 'inventory_index' in bodies:
-        try:
-            parsed = parse_inventory_index(bodies['inventory_index'])
-            patch.update(parsed)
-            rows += sum(len(x['data']) for x in parsed.values())
-            catalogs['inventory_index'] = INVENTORY_CATALOG
-        except Exception as exc:
-            warnings.append(f'inventory_index_parse: {type(exc).__name__}: {exc}')
 
     for source_key, family, prefix, catalog, url in [
         ('electronic_orders', '電子產品', 'orders_supplement.electronic', ELECTRONIC_ORDERS_CATALOG, ELECTRONIC_ORDERS_URL),
