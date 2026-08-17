@@ -1,14 +1,10 @@
 {
   "version": 2,
-  "as_of": "2026-08-16",
+  "as_of": "2026-08-17",
   "research_policy": {
     "authority": "MODEL_RESEARCH_ONLY",
     "upstream_buy_authority": "linwuyen/stock",
-    "seed_scope": [
-      "2301",
-      "2376",
-      "2451"
-    ],
+    "seed_scope": ["2301", "2376", "2451"],
     "fact_boundary": "First-party reported facts and upstream Alpha inputs may seed the model; 24-36m targets/multiples are explicit Elephant model assumptions, never company guidance.",
     "missing_survival_evidence": "INCOMPLETE"
   },
@@ -42,219 +38,54 @@
           "Current multiple uses upstream normalized PE 11.1x; valuation does not assume a >1.5x multiple expansion."
         ]
       },
-      "catalysts": [
-        {
-          "name": "Rack-scale AI infrastructure ramp",
-          "mechanism": "AI server/rack shipments can increase revenue scale and operating leverage",
-          "kpi": "AI server/rack shipment and segment revenue/margin progression",
-          "expected_window": "2026-2028",
-          "source_quality": "FIRST_PARTY",
-          "source_url": "https://www.gigabyte.com/tw/press/news/2393"
-        }
-      ],
+      "catalysts": [{
+        "name": "Rack-scale AI infrastructure ramp",
+        "mechanism": "AI server/rack shipments can increase revenue scale and operating leverage",
+        "kpi": "AI server/rack shipment and segment revenue/margin progression",
+        "expected_window": "2026-2028",
+        "source_quality": "FIRST_PARTY",
+        "source_url": "https://www.gigabyte.com/tw/press/news/2393"
+      }],
       "survival": {
-        "status": "INCOMPLETE",
+        "status": "PASS",
         "basis": [
-          "No dedicated first-party 24-36m survival package (net cash/debt, OCF/FCF, refinancing stress) has been locked into this contract yet."
+          "FIRST_PARTY 2026Q1 consolidated balance sheet: cash and cash equivalents NT$63.311bn; current assets NT$234.088bn versus current liabilities NT$170.375bn (current-asset coverage ~1.37x). Source: https://www.gigabyte.com/FileUpload/Global/SiteMap/134/images/FinancialReport-2026Q1-en.pdf",
+          "FIRST_PARTY 2026Q1 debt/liquidity: unsecured short-term bank loans NT$69.228bn against committed/available credit lines disclosed at NT$128.709bn; current portion of convertible-bond liabilities NT$9.345bn. Cash plus disclosed credit-line capacity is sufficient to cover these near-term funding claims in the model stress screen without assuming rescue equity. Source: https://www.gigabyte.com/FileUpload/Global/SiteMap/134/images/FinancialReport-2026Q1-en.pdf",
+          "FIRST_PARTY refinancing profile: fourth overseas unsecured convertible bond matures 2029-07-23; third overseas unsecured convertible bond matures 2028-07-27. The 2024 bond has a 0% coupon and 0.875% maturity yield; maturities are not concentrated inside the next 12 months, though put/conversion features require monitoring. Source: https://www.gigabyte.com/FileUpload/Global/SiteMap/134/images/FinancialReport-2026Q1-en.pdf",
+          "FIRST_PARTY cash-flow stress: 2026Q1 OCF was -NT$20.653bn, driven primarily by a NT$69.440bn inventory increase, partly funded by a NT$35.085bn accounts-payable increase and higher short-term borrowing. This is a material working-capital/cash-conversion risk, but current liquidity does not indicate existential or rescue-financing risk. Source: https://www.gigabyte.com/FileUpload/Global/SiteMap/134/images/FinancialReport-2026Q1-en.pdf",
+          "SURVIVAL MODEL JUDGMENT: PASS means the company appears able to survive a 24-36m operating/working-capital stress without rescue financing based on disclosed liquidity; it does not mean cash-flow quality passes. Revoke PASS if cash plus undrawn facilities no longer cover short-term borrowings/current bond puts, current-asset coverage falls below 1.0x, or persistent negative OCF is financed mainly by incremental debt without inventory/cash conversion."
         ],
-        "existential_risk": "UNKNOWN"
+        "existential_risk": "NONE"
       },
       "quarterly_checks": [
-        {
-          "metric": "EPS and operating margin conversion",
-          "expected": "EPS/margin should validate revenue-to-profit conversion",
-          "fail_condition": "high revenue growth persists while EPS/operating margin materially deteriorates",
-          "source": "TWSE/MOPS quarterly filing"
-        },
-        {
-          "metric": "AI server/rack shipment evidence",
-          "expected": "first-party product/customer shipment evidence remains consistent with ramp",
-          "fail_condition": "material shipment delay/cancellation or demand reset",
-          "source": "GIGABYTE IR / company releases"
-        },
-        {
-          "metric": "Operating cash flow",
-          "expected": "cash conversion supports reported earnings",
-          "fail_condition": "persistent earnings growth without corresponding operating cash generation",
-          "source": "TWSE/MOPS cash-flow statement"
-        }
+        {"metric":"EPS and operating margin conversion","expected":"EPS/margin should validate revenue-to-profit conversion","fail_condition":"high revenue growth persists while EPS/operating margin materially deteriorates","source":"TWSE/MOPS quarterly filing"},
+        {"metric":"AI server/rack shipment evidence","expected":"first-party product/customer shipment evidence remains consistent with ramp","fail_condition":"material shipment delay/cancellation or demand reset","source":"GIGABYTE IR / company releases"},
+        {"metric":"Operating cash flow and working-capital funding","expected":"OCF should recover as inventory converts to shipments/cash; liquidity coverage remains >1.0x","fail_condition":"persistent negative OCF plus rising debt, or cash + disclosed credit capacity no longer covers short-term borrowings/current bond puts","source":"GIGABYTE quarterly financial report / TWSE-MOPS cash-flow and balance-sheet statements"}
       ]
     },
     "2301": {
-      "ticker": "2301",
-      "name": "光寶科",
-      "long_horizon_earnings": {
-        "status": "COMPLETE",
-        "metric": "EPS",
-        "baseline_period": "FY2027E normalized (upstream model)",
-        "baseline_value": 10,
-        "target_period": "FY2029E model",
-        "target_value": 18,
-        "target_multiple": 1.8,
-        "horizon_months": 30,
-        "evidence_and_assumptions": [
-          "MODEL ASSUMPTION: 24-36m target EPS 18; not company guidance.",
-          "Upstream Alpha normalized EPS is 10 and base FY2027E EPS is 10.8.",
-          "First-party H1 2026 evidence shows Cloud & AIoT strong growth, but this does not by itself prove the 24-36m EPS path."
-        ]
-      },
-      "long_horizon_valuation": {
-        "status": "COMPLETE",
-        "model_type": "PE",
-        "current_multiple": 24.7,
-        "bull_multiple": 30.0,
-        "bear_fair_value": 180,
-        "evidence_and_assumptions": [
-          "MODEL ASSUMPTION: bull multiple 30x and bear fair value NT$180.",
-          "Current multiple uses upstream normalized PE 24.7x."
-        ]
-      },
-      "catalysts": [
-        {
-          "name": "Cloud / AI power and BBU mix expansion",
-          "mechanism": "higher-value cloud/AI power products can raise revenue quality and earnings",
-          "kpi": "Cloud & AIoT growth plus operating margin/EPS conversion",
-          "expected_window": "2026-2028",
-          "source_quality": "FIRST_PARTY",
-          "source_url": "https://www.liteon.com/en/news/press-center/content/liteon-monthly-sales-june-2026"
-        }
-      ],
-      "survival": {
-        "status": "INCOMPLETE",
-        "basis": [
-          "Dedicated first-party balance-sheet/FCF stress package has not yet been frozen into the 24-36m Constitution research record."
-        ],
-        "existential_risk": "UNKNOWN"
-      },
-      "quarterly_checks": [
-        {
-          "metric": "Cloud/AIoT revenue growth",
-          "expected": "growth remains structurally above company average",
-          "fail_condition": "Cloud/AIoT growth materially stalls for multiple reporting periods",
-          "source": "LITEON monthly/quarterly releases"
-        },
-        {
-          "metric": "Operating margin and EPS",
-          "expected": "mix improvement converts into profitability",
-          "fail_condition": "revenue rises while operating margin/EPS trend weakens materially",
-          "source": "LITEON/TWSE quarterly filing"
-        },
-        {
-          "metric": "Operating cash flow / FCF",
-          "expected": "earnings are supported by cash conversion",
-          "fail_condition": "persistent earnings/cash-flow divergence",
-          "source": "TWSE/MOPS cash-flow statement"
-        }
-      ]
+      "ticker":"2301","name":"光寶科",
+      "long_horizon_earnings":{"status":"COMPLETE","metric":"EPS","baseline_period":"FY2027E normalized (upstream model)","baseline_value":10,"target_period":"FY2029E model","target_value":18,"target_multiple":1.8,"horizon_months":30,"evidence_and_assumptions":["MODEL ASSUMPTION: 24-36m target EPS 18; not company guidance.","Upstream Alpha normalized EPS is 10 and base FY2027E EPS is 10.8.","First-party H1 2026 evidence shows Cloud & AIoT strong growth, but this does not by itself prove the 24-36m EPS path."]},
+      "long_horizon_valuation":{"status":"COMPLETE","model_type":"PE","current_multiple":24.7,"bull_multiple":30.0,"bear_fair_value":180,"evidence_and_assumptions":["MODEL ASSUMPTION: bull multiple 30x and bear fair value NT$180.","Current multiple uses upstream normalized PE 24.7x."]},
+      "catalysts":[{"name":"Cloud / AI power and BBU mix expansion","mechanism":"higher-value cloud/AI power products can raise revenue quality and earnings","kpi":"Cloud & AIoT growth plus operating margin/EPS conversion","expected_window":"2026-2028","source_quality":"FIRST_PARTY","source_url":"https://www.liteon.com/en/news/press-center/content/liteon-monthly-sales-june-2026"}],
+      "survival":{"status":"INCOMPLETE","basis":["Dedicated first-party balance-sheet/FCF stress package has not yet been frozen into the 24-36m Constitution research record."],"existential_risk":"UNKNOWN"},
+      "quarterly_checks":[{"metric":"Cloud/AIoT revenue growth","expected":"growth remains structurally above company average","fail_condition":"Cloud/AIoT growth materially stalls for multiple reporting periods","source":"LITEON monthly/quarterly releases"},{"metric":"Operating margin and EPS","expected":"mix improvement converts into profitability","fail_condition":"revenue rises while operating margin/EPS trend weakens materially","source":"LITEON/TWSE quarterly filing"},{"metric":"Operating cash flow / FCF","expected":"earnings are supported by cash conversion","fail_condition":"persistent earnings/cash-flow divergence","source":"TWSE/MOPS cash-flow statement"}]
     },
     "2451": {
-      "ticker": "2451",
-      "name": "創見",
-      "long_horizon_earnings": {
-        "status": "COMPLETE",
-        "metric": "EPS",
-        "baseline_period": "FY2027E normalized (upstream model)",
-        "baseline_value": 35,
-        "target_period": "FY2029E model",
-        "target_value": 63,
-        "target_multiple": 1.8,
-        "horizon_months": 30,
-        "evidence_and_assumptions": [
-          "MODEL ASSUMPTION: 24-36m target EPS 63; not company guidance.",
-          "Upstream normalized EPS is 35; current trailing PE is explicitly treated as peak-cycle distorted.",
-          "This target must survive normalization of DRAM/NAND pricing and inventory gains."
-        ]
-      },
-      "long_horizon_valuation": {
-        "status": "COMPLETE",
-        "model_type": "PE",
-        "current_multiple": 8.49,
-        "bull_multiple": 10.0,
-        "bear_fair_value": 175,
-        "evidence_and_assumptions": [
-          "MODEL ASSUMPTION: bull multiple 10x and bear fair value NT$175.",
-          "Current multiple uses upstream normalized PE 8.49x."
-        ]
-      },
-      "catalysts": [],
-      "survival": {
-        "status": "INCOMPLETE",
-        "basis": [
-          "Q2 financial report exists, but a dedicated normalized-cycle balance-sheet/FCF survival analysis is not yet frozen into this record."
-        ],
-        "existential_risk": "UNKNOWN"
-      },
-      "quarterly_checks": [
-        {
-          "metric": "Normalized EPS",
-          "expected": "EPS remains robust after memory-price normalization",
-          "fail_condition": "normalized EPS falls materially below the 24-36m path",
-          "source": "Transcend quarterly financial reports"
-        },
-        {
-          "metric": "DRAM/NAND pricing and inventory contribution",
-          "expected": "earnings are not dominated by one-off inventory gains",
-          "fail_condition": "reported profit depends primarily on inventory/spot-price windfall",
-          "source": "Transcend IR / quarterly filing"
-        },
-        {
-          "metric": "Operating cash flow",
-          "expected": "cash conversion validates normalized earnings",
-          "fail_condition": "profit growth is not supported by operating cash flow",
-          "source": "Transcend quarterly financial reports"
-        }
-      ]
+      "ticker":"2451","name":"創見",
+      "long_horizon_earnings":{"status":"COMPLETE","metric":"EPS","baseline_period":"FY2027E normalized (upstream model)","baseline_value":35,"target_period":"FY2029E model","target_value":63,"target_multiple":1.8,"horizon_months":30,"evidence_and_assumptions":["MODEL ASSUMPTION: 24-36m target EPS 63; not company guidance.","Upstream normalized EPS is 35; current trailing PE is explicitly treated as peak-cycle distorted.","This target must survive normalization of DRAM/NAND pricing and inventory gains."]},
+      "long_horizon_valuation":{"status":"COMPLETE","model_type":"PE","current_multiple":8.49,"bull_multiple":10.0,"bear_fair_value":175,"evidence_and_assumptions":["MODEL ASSUMPTION: bull multiple 10x and bear fair value NT$175.","Current multiple uses upstream normalized PE 8.49x."]},
+      "catalysts":[],
+      "survival":{"status":"INCOMPLETE","basis":["Q2 financial report exists, but a dedicated normalized-cycle balance-sheet/FCF survival analysis is not yet frozen into this record."],"existential_risk":"UNKNOWN"},
+      "quarterly_checks":[{"metric":"Normalized EPS","expected":"EPS remains robust after memory-price normalization","fail_condition":"normalized EPS falls materially below the 24-36m path","source":"Transcend quarterly financial reports"},{"metric":"DRAM/NAND pricing and inventory contribution","expected":"earnings are not dominated by one-off inventory gains","fail_condition":"reported profit depends primarily on inventory/spot-price windfall","source":"Transcend IR / quarterly filing"},{"metric":"Operating cash flow","expected":"cash conversion validates normalized earnings","fail_condition":"profit growth is not supported by operating cash flow","source":"Transcend quarterly financial reports"}]
     }
   },
   "schema": {
-    "long_horizon_earnings": {
-      "status": "COMPLETE|INCOMPLETE",
-      "metric": "EPS|FCF_PER_SHARE",
-      "baseline_period": "YYYY or TTM",
-      "baseline_value": "number",
-      "target_period": "YYYY",
-      "target_value": "number",
-      "target_multiple": "number",
-      "horizon_months": "number",
-      "evidence_and_assumptions": [
-        "string"
-      ]
-    },
-    "long_horizon_valuation": {
-      "status": "COMPLETE|INCOMPLETE",
-      "model_type": "PE|P_FCF|OTHER_MULTIPLE",
-      "current_multiple": "number",
-      "bull_multiple": "number",
-      "bear_fair_value": "number",
-      "evidence_and_assumptions": [
-        "string"
-      ]
-    },
-    "catalysts": [
-      {
-        "name": "string",
-        "mechanism": "string",
-        "kpi": "string",
-        "expected_window": "string",
-        "source_quality": "FIRST_PARTY",
-        "source_url": "string"
-      }
-    ],
-    "survival": {
-      "status": "PASS|FAIL|INCOMPLETE",
-      "basis": [
-        "string"
-      ],
-      "existential_risk": "NONE|MATERIAL|UNKNOWN"
-    },
-    "quarterly_checks": [
-      {
-        "metric": "string",
-        "expected": "string",
-        "fail_condition": "string",
-        "source": "string"
-      }
-    ]
+    "long_horizon_earnings":{"status":"COMPLETE|INCOMPLETE","metric":"EPS|FCF_PER_SHARE","baseline_period":"YYYY or TTM","baseline_value":"number","target_period":"YYYY","target_value":"number","target_multiple":"number","horizon_months":"number","evidence_and_assumptions":["string"]},
+    "long_horizon_valuation":{"status":"COMPLETE|INCOMPLETE","model_type":"PE|P_FCF|OTHER_MULTIPLE","current_multiple":"number","bull_multiple":"number","bear_fair_value":"number","evidence_and_assumptions":["string"]},
+    "catalysts":[{"name":"string","mechanism":"string","kpi":"string","expected_window":"string","source_quality":"FIRST_PARTY","source_url":"string"}],
+    "survival":{"status":"PASS|FAIL|INCOMPLETE","basis":["string"],"existential_risk":"NONE|MATERIAL|UNKNOWN"},
+    "quarterly_checks":[{"metric":"string","expected":"string","fail_condition":"string","source":"string"}]
   },
-  "guardrail": "This file stores explicit 24-36m research/model judgments only. Missing structured fields fail closed; model assumptions are labeled and never promoted into company facts."
+  "guardrail":"This file stores explicit 24-36m research/model judgments only. Missing structured fields fail closed; model assumptions are labeled and never promoted into company facts."
 }
