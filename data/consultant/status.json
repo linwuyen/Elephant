@@ -2,17 +2,17 @@
   "status": "ok",
   "coverage_complete": true,
   "upstream_health": "healthy",
-  "upstream_snapshot_id": "35fc95e9e9f96e26",
+  "upstream_snapshot_id": "f63913106e7cf5b2",
   "upstream_schema_version": 2,
-  "synced_at": "2026-08-17T03:15:26Z",
+  "synced_at": "2026-08-18T03:11:53Z",
   "source_repo": "linwuyen/Consultant_System",
-  "source_generated_at": "2026-08-17T02:36:00Z",
-  "source_updated_at": "2026-08-17T02:34:49Z",
-  "reports": 60,
-  "latest_date": "2026-08-14",
+  "source_generated_at": "2026-08-18T02:31:37Z",
+  "source_updated_at": "2026-08-18T02:30:35Z",
+  "reports": 61,
+  "latest_date": "2026-08-18",
   "companies": {
     "McKinsey": 5,
-    "BCG": 13,
+    "BCG": 14,
     "Deloitte": 37,
     "PwC": 5
   },
@@ -22,41 +22,41 @@
       "latest_publication": "2026-07-30",
       "ingestion_status": "healthy",
       "observed_count": 5,
-      "last_success_at": "2026-08-17T02:35:47Z"
+      "last_success_at": "2026-08-18T02:30:35Z"
     },
     "BCG": {
-      "records": 13,
-      "latest_publication": "2026-08-14",
+      "records": 14,
+      "latest_publication": "2026-08-18",
       "ingestion_status": "healthy",
-      "observed_count": 6,
-      "last_success_at": "2026-08-17T02:35:47Z"
+      "observed_count": 7,
+      "last_success_at": "2026-08-18T02:30:35Z"
     },
     "Deloitte": {
       "records": 37,
       "latest_publication": "2026-08-10",
       "ingestion_status": "healthy",
       "observed_count": 33,
-      "last_success_at": "2026-08-17T02:34:49Z"
+      "last_success_at": "2026-08-18T02:29:58Z"
     },
     "PwC": {
       "records": 5,
       "latest_publication": "2026-06-23",
       "ingestion_status": "healthy",
       "observed_count": 6,
-      "last_success_at": "2026-08-17T02:34:49Z"
+      "last_success_at": "2026-08-18T02:29:58Z"
     }
   },
   "minimum_reports_per_company": 3,
   "topics": {
-    "AI": 30,
+    "AI": 31,
     "Strategy": 10,
     "Economics": 9,
     "Workforce": 7,
     "Supply Chain": 6,
+    "Data Center": 4,
     "Semiconductor": 4,
-    "Data Center": 3,
-    "Manufacturing": 3,
-    "Energy": 2
+    "Energy": 3,
+    "Manufacturing": 3
   },
   "contract": "research-context-only",
   "score_influence": false
