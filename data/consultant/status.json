@@ -2,18 +2,18 @@
   "status": "ok",
   "coverage_complete": true,
   "upstream_health": "healthy",
-  "upstream_snapshot_id": "f63913106e7cf5b2",
+  "upstream_snapshot_id": "f30867052d349abe",
   "upstream_schema_version": 2,
-  "synced_at": "2026-08-18T03:11:53Z",
+  "synced_at": "2026-08-19T03:13:41Z",
   "source_repo": "linwuyen/Consultant_System",
-  "source_generated_at": "2026-08-18T02:31:37Z",
-  "source_updated_at": "2026-08-18T02:30:35Z",
-  "reports": 61,
+  "source_generated_at": "2026-08-19T02:34:52Z",
+  "source_updated_at": "2026-08-19T02:32:43Z",
+  "reports": 71,
   "latest_date": "2026-08-18",
   "companies": {
     "McKinsey": 5,
     "BCG": 14,
-    "Deloitte": 37,
+    "Deloitte": 47,
     "PwC": 5
   },
   "company_health": {
@@ -22,40 +22,40 @@
       "latest_publication": "2026-07-30",
       "ingestion_status": "healthy",
       "observed_count": 5,
-      "last_success_at": "2026-08-18T02:30:35Z"
+      "last_success_at": "2026-08-19T02:33:53Z"
     },
     "BCG": {
       "records": 14,
       "latest_publication": "2026-08-18",
       "ingestion_status": "healthy",
       "observed_count": 7,
-      "last_success_at": "2026-08-18T02:30:35Z"
+      "last_success_at": "2026-08-19T02:33:53Z"
     },
     "Deloitte": {
-      "records": 37,
-      "latest_publication": "2026-08-10",
+      "records": 47,
+      "latest_publication": "2026-08-11",
       "ingestion_status": "healthy",
-      "observed_count": 33,
-      "last_success_at": "2026-08-18T02:29:58Z"
+      "observed_count": 30,
+      "last_success_at": "2026-08-19T02:32:43Z"
     },
     "PwC": {
       "records": 5,
       "latest_publication": "2026-06-23",
       "ingestion_status": "healthy",
       "observed_count": 6,
-      "last_success_at": "2026-08-18T02:29:58Z"
+      "last_success_at": "2026-08-19T02:32:43Z"
     }
   },
   "minimum_reports_per_company": 3,
   "topics": {
-    "AI": 31,
-    "Strategy": 10,
-    "Economics": 9,
-    "Workforce": 7,
-    "Supply Chain": 6,
+    "AI": 33,
+    "Strategy": 14,
+    "Economics": 12,
+    "Workforce": 8,
+    "Supply Chain": 7,
     "Data Center": 4,
+    "Energy": 4,
     "Semiconductor": 4,
-    "Energy": 3,
     "Manufacturing": 3
   },
   "contract": "research-context-only",
