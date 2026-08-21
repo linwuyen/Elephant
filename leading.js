@@ -3,16 +3,29 @@
   const $=s=>document.querySelector(s);
   const fmt=v=>v==null?'—':Number(v).toLocaleString('zh-TW',{maximumFractionDigits:4});
   const labels={leading_no_trend:'領先指標（不含趨勢）',coincident_no_trend:'同時指標（不含趨勢）',lagging_no_trend:'落後指標（不含趨勢）',policy_score:'景氣燈號綜合分數',pmi:'PMI',nmi:'NMI',customs_exports:'海關出口值',export_order_diffusion:'外銷訂單動向指數',m1b:'M1B',unemployment_rate:'失業率',manufacturing_inventory:'製造業存貨價值',semiconductor_equipment_imports:'半導體設備進口'};
+  const meanings={
+    leading_no_trend:'領先指標用來觀察未來景氣方向與轉折；這裡保留官方「不含趨勢」序列，不自行把某個固定 level 當成擴張／衰退門檻。',
+    coincident_no_trend:'同時指標描述當期景氣共同行為；重點是方向、轉折與連續變化，不把單一月份 level 當成獨立決策訊號。',
+    lagging_no_trend:'落後指標多在景氣轉折後確認既有趨勢；適合驗證，不適合拿來當最早的領先訊號。',
+    policy_score:'官方景氣燈號綜合分數必須和國發會公布的燈號規則一起讀；它不是 Elephant Cycle Score，也不套用 Elephant 的 -100～+100 門檻。',
+    pmi:'PMI：50 是擴張／緊縮的中性分界；高於 50 表示受訪企業活動相較前月擴張，低於 50 表示緊縮。',
+    nmi:'NMI：50 是擴張／緊縮的中性分界；高於 50 表示非製造業活動相較前月擴張，低於 50 表示緊縮。',
+    export_order_diffusion:'外銷訂單動向指數屬 diffusion-style 指標；用來看訂單方向與廣度，不等同外銷訂單金額年增率。',
+    unemployment_rate:'失業率是 level rate；較低通常代表勞動市場較緊，但不能把 0% 當合理景氣基準。'
+  };
 
   function current(){const sel=$('#leadingSelect');return sel&&ndcData?ndcData.series?.[sel.value]:null}
+  function unitText(s){return window.ElephantUnits?.[s?.unit]||s?.unit||'數值'}
+  function setMeaning(key,s){const canvas=$('#leadingChart'),wrap=canvas?.closest('.chart');if(!wrap)return;let p=wrap.nextElementSibling;if(!p||!p.classList.contains('chart-meaning')){p=document.createElement('p');p.className='chart-meaning';wrap.insertAdjacentElement('afterend',p)}p.textContent=`${meanings[key]||`${s.name||labels[key]||key}：縱軸 ${unitText(s)}，請依官方定義判讀 level 與變化。`} 折線只連接官方離散觀測值，不做曲線插值。`}
   function draw(){
     const sel=$('#leadingSelect'); if(!sel||!ndcData)return;
     const s=current(); if(!s)return;
     const canvas=$('#leadingChart');
     if(ndcChart)ndcChart.destroy();
-    ndcChart=new Chart(canvas,{type:'line',data:{labels:s.data.map(x=>x[0]),datasets:[{label:s.name||labels[sel.value]||sel.value,data:s.data.map(x=>x[1]),borderWidth:2,pointRadius:s.data.length>48?0:2,tension:.18}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12}},y:{beginAtZero:false}}}});
-    const unit=s.unit||'value';
+    const key=sel.value,unit=unitText(s),guide=(key==='pmi'||key==='nmi')?[{value:50,label:'50 = 擴張／緊縮分界'}]:[];
+    ndcChart=new Chart(canvas,{type:'line',data:{labels:s.data.map(x=>x[0]),datasets:[{label:s.name||labels[key]||key,data:s.data.map(x=>x[1]),borderWidth:2,pointRadius:s.data.length>48?0:2,tension:0}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},semanticGuide:{lines:guide}},scales:{x:{ticks:{maxTicksLimit:12}},y:{beginAtZero:false,title:{display:true,text:unit}}}}});
     $('#leadingRows').innerHTML=[...s.data].reverse().slice(0,240).map(([p,v])=>`<tr><td>${p}</td><td>${fmt(v)}</td><td>${unit}</td></tr>`).join('');
+    setMeaning(key,s);
   }
   function download(){
     const sel=$('#leadingSelect'),s=current();if(!sel||!s)return;

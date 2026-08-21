@@ -5,15 +5,17 @@
   const fmt=v=>v==null?'—':Number(v).toLocaleString('zh-TW',{maximumFractionDigits:2});
   const sign=(v,s='')=>v==null?'—':`${Number(v)>=0?'+':''}${Number(v).toFixed(1)}${s}`;
 
+  function setMeaning(){const canvas=$('#cycleHistoryChart'),wrap=canvas?.closest('.chart');if(!wrap)return;let p=wrap.nextElementSibling;if(!p||!p.classList.contains('chart-meaning')){p=document.createElement('p');p.className='chart-meaning';wrap.insertAdjacentElement('afterend',p)}p.textContent='Cycle Score 與 Momentum 都在 -100～+100 的同一標準化方向尺度；0 是中性基準。這是用目前修訂後官方序列重建的歷史比較，不是當時可取得資料的 real-time backtest。';}
   function draw(){
     if(!hist)return;
     const rows=hist.cycle_history||[];
     const ctx=$('#cycleHistoryChart'); if(!ctx)return;
     if(chart)chart.destroy();
     chart=new Chart(ctx,{type:'line',data:{labels:rows.map(x=>x.period),datasets:[
-      {label:'Cycle Score',data:rows.map(x=>x.score),borderWidth:2,pointRadius:0,tension:.16,yAxisID:'y'},
-      {label:'Momentum',data:rows.map(x=>x.momentum_score),borderWidth:1.5,pointRadius:0,tension:.16,yAxisID:'y'}
-    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom'}},scales:{y:{min:-100,max:100},x:{ticks:{maxTicksLimit:14}}}}});
+      {label:'Cycle Score',data:rows.map(x=>x.score),borderWidth:2,pointRadius:0,tension:0,yAxisID:'y'},
+      {label:'Momentum',data:rows.map(x=>x.momentum_score),borderWidth:1.5,pointRadius:0,tension:0,yAxisID:'y'}
+    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom'},semanticGuide:{lines:[{value:0,label:'0 = 中性'}]}},scales:{y:{min:-100,max:100,title:{display:true,text:'標準化方向分數 (-100…+100)'}},x:{ticks:{maxTicksLimit:14}}}}});
+    setMeaning();
     const last=rows.at(-1);
     $('#cycleHistoryMeta').textContent=last?`重建 ${rows.length} 個月 · 最新 ${last.period} · ${last.label} ${sign(last.score)}`:'—';
     $('#cycleHistoryRows').innerHTML=[...rows].reverse().slice(0,120).map(x=>`<tr><td>${esc(x.period)}</td><td>${sign(x.score)}</td><td>${esc(x.label)}</td><td>${sign(x.momentum_score)}</td><td>${x.breadth==null?'—':fmt(x.breadth)+'%'}</td><td>${x.pmi==null?'—':fmt(x.pmi)}</td><td>${x.policy_score==null?'—':fmt(x.policy_score)}</td></tr>`).join('');
