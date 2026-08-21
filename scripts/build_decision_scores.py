@@ -21,11 +21,14 @@ WEIGHTS = {
         'card_spending': .20,
     },
     'financial': {
-        'm1b': .25,
-        'm2': .20,
-        'credit': .25,
-        'interest_rate': .15,
-        'exchange_rate': .15,
+        # Exchange-rate direction is economically ambiguous, so its authority is
+        # diagnostic-only until prospective validation supports a directional map.
+        # The four active components are renormalized from the former 85% total.
+        'm1b': 5 / 17,
+        'm2': 4 / 17,
+        'credit': 5 / 17,
+        'interest_rate': 3 / 17,
+        'exchange_rate': 0.0,
     },
 }
 
@@ -38,7 +41,7 @@ QUESTIONS = {
 CHAINS = {
     'growth_persistence': '外銷訂單 → 出口 → 生產 → 銷售 → 庫存',
     'domestic_demand': '實質薪資 → 就業 → 零售 → 餐飲 → 信用卡消費',
-    'financial_conditions': 'M1B → M2 → 銀行信用 → 利率 → 匯率',
+    'financial_conditions': 'M1B → M2 → 銀行信用 → 利率；匯率只做 diagnostic',
 }
 
 
@@ -313,7 +316,7 @@ def financial_score(period, ndc, inputs):
         component('m2', 'M2', m2y, None if m2y is None else m2y / 7 * 100, WEIGHTS['financial']['m2'], m2p, 'M2 YoY', 'CBC'),
         component('credit', '銀行信用', cy, None if cy is None else cy / 8 * 100, WEIGHTS['financial']['credit'], cp, '金融機構放款與投資 YoY', csrc or 'CBC'),
         component('interest_rate', '短期利率', rdelta, None if rdelta is None else -rdelta / .75 * 100, WEIGHTS['financial']['interest_rate'], rp, '隔夜拆款利率相較一年前下降視為較寬鬆', 'CBC'),
-        component('exchange_rate', '匯率條件', fx12, None if fx12 is None else fx12 / 6 * 100, WEIGHTS['financial']['exchange_rate'], fxp, 'USD/TWD 12M 變動；新台幣適度貶值視為出口型金融條件較寬鬆，極端值以 ±100 截斷', 'CBC'),
+        component('exchange_rate', 'USD/TWD 12M（diagnostic）', fx12, 0.0 if fx12 is not None else None, WEIGHTS['financial']['exchange_rate'], fxp, '匯率同時反映競爭力、輸入型通膨、資金流與 risk-off；方向非單調，驗證前 weight=0、不改 Financial Conditions', 'CBC'),
     ]
     agg = aggregate(parts)
     if not agg:
@@ -367,7 +370,7 @@ def generate():
             'financial': WEIGHTS['financial'],
             'real_growth_formula': '(1+nominal_yoy/100)/(1+cpi_yoy/100)-1',
             'real_growth_policy': 'CPI 缺值時不以 nominal YoY 冒充 real YoY；該 component 缺值並由既有權重正規化與 coverage confidence 處理。',
-            'exchange_rate_assumption': 'USD/TWD 上升代表新台幣貶值；在本出口導向 Financial Conditions proxy 中視為較寬鬆，但極端匯率波動仍應另外視為風險。',
+            'exchange_rate_assumption': 'USD/TWD 只保留為 diagnostic raw signal。因匯率的競爭力、通膨、資金流與風險效果方向不單調，在 prospective validation 支持前 score weight 固定為 0。',
         },
         'sources': inputs.get('catalogs', {}),
     }
@@ -384,7 +387,7 @@ def generate():
         inserts.append(f"Domestic Demand {d['score']:+.0f}/100（{d['label']}）：觀察實質薪資→就業→零售→餐飲→信用卡消費是否同步。")
     if current.get('financial_conditions'):
         f = current['financial_conditions']
-        inserts.append(f"Financial Conditions {f['score']:+.0f}/100（{f['label']}）：觀察 M1B→M2→銀行信用→利率→匯率是否持續支持景氣。")
+        inserts.append(f"Financial Conditions {f['score']:+.0f}/100（{f['label']}）：觀察 M1B→M2→銀行信用→利率；匯率暫為 diagnostic-only。")
     summary['watchlist'] = inserts + [x for x in watch if not str(x).startswith(('Growth Persistence ', 'Domestic Demand ', 'Financial Conditions '))]
     save_json('summary.json', summary)
     return obj
