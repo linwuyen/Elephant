@@ -2,14 +2,14 @@
   "status": "ok",
   "coverage_complete": true,
   "upstream_health": "healthy",
-  "upstream_snapshot_id": "cd93b143db63d8cb",
+  "upstream_snapshot_id": "d41f4def75f29e9e",
   "upstream_schema_version": 2,
-  "synced_at": "2026-08-20T03:13:09Z",
+  "synced_at": "2026-08-21T03:25:25Z",
   "source_repo": "linwuyen/Consultant_System",
-  "source_generated_at": "2026-08-20T02:34:12Z",
-  "source_updated_at": "2026-08-20T02:30:57Z",
+  "source_generated_at": "2026-08-21T02:39:29Z",
+  "source_updated_at": "2026-08-21T02:37:11Z",
   "reports": 71,
-  "latest_date": "2026-08-18",
+  "latest_date": "2026-08-19",
   "companies": {
     "McKinsey": 5,
     "BCG": 14,
@@ -22,28 +22,28 @@
       "latest_publication": "2026-07-30",
       "ingestion_status": "healthy",
       "observed_count": 5,
-      "last_success_at": "2026-08-20T02:33:09Z"
+      "last_success_at": "2026-08-21T02:38:28Z"
     },
     "BCG": {
       "records": 14,
       "latest_publication": "2026-08-18",
       "ingestion_status": "healthy",
       "observed_count": 6,
-      "last_success_at": "2026-08-20T02:33:09Z"
+      "last_success_at": "2026-08-21T02:38:28Z"
     },
     "Deloitte": {
       "records": 47,
-      "latest_publication": "2026-08-11",
+      "latest_publication": "2026-08-19",
       "ingestion_status": "healthy",
       "observed_count": 30,
-      "last_success_at": "2026-08-20T02:30:57Z"
+      "last_success_at": "2026-08-21T02:37:11Z"
     },
     "PwC": {
       "records": 5,
       "latest_publication": "2026-06-23",
       "ingestion_status": "healthy",
       "observed_count": 6,
-      "last_success_at": "2026-08-20T02:30:57Z"
+      "last_success_at": "2026-08-21T02:37:11Z"
     }
   },
   "minimum_reports_per_company": 3,
