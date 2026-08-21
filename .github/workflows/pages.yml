@@ -51,6 +51,7 @@ jobs:
           node --check personal_capital.js
           node --check research.js
           node --check decision.js
+          node --check portfolio_state.js
           node --check intelligence.js
           node --check decision_engine.js
           node --check decision_validation.js
@@ -80,6 +81,7 @@ jobs:
         run: |
           python scripts/validate_data.py
           python scripts/test_decision_score_math.py
+          node scripts/test_portfolio_state.js
           python scripts/validate_decision_scores.py
           python scripts/validate_model_validation.py
           python scripts/validate_structural_layers.py

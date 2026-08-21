@@ -79,34 +79,33 @@
   }
   init();
 
-  if(!document.querySelector('script[data-elephant-intelligence]')){
-    const s=document.createElement('script');
-    s.src='intelligence.js'; s.defer=true; s.dataset.elephantIntelligence='1';
-    document.head.appendChild(s);
+  function ensurePortfolioState(){
+    if(window.ElephantPortfolioState)return Promise.resolve(window.ElephantPortfolioState);
+    return new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-elephant-portfolio-state]');
+      if(existing){existing.addEventListener('load',()=>resolve(window.ElephantPortfolioState),{once:true});existing.addEventListener('error',reject,{once:true});return;}
+      const s=document.createElement('script');s.src='portfolio_state.js';s.async=false;s.dataset.elephantPortfolioState='1';
+      s.onload=()=>resolve(window.ElephantPortfolioState);s.onerror=()=>reject(new Error('portfolio_state.js load failed'));
+      document.head.appendChild(s);
+    });
   }
 
-  if(!document.querySelector('script[data-elephant-decision-engine]')){
-    const s=document.createElement('script');
-    s.src='decision_engine.js'; s.defer=true; s.dataset.elephantDecisionEngine='1';
-    document.head.appendChild(s);
+  function appendScript(selector,src,datasetKey){
+    if(document.querySelector(selector))return;
+    const s=document.createElement('script');s.src=src;s.defer=true;s.dataset[datasetKey]='1';document.head.appendChild(s);
   }
 
-  if(!document.querySelector('script[data-elephant-validation]')){
-    const s=document.createElement('script');
-    s.src='decision_validation.js'; s.defer=true; s.dataset.elephantValidation='1';
-    document.head.appendChild(s);
+  async function loadExtensions(){
+    await ensurePortfolioState();
+    appendScript('script[data-elephant-intelligence]','intelligence.js','elephantIntelligence');
+    appendScript('script[data-elephant-decision-engine]','decision_engine.js','elephantDecisionEngine');
+    appendScript('script[data-elephant-validation]','decision_validation.js','elephantValidation');
+    appendScript('script[data-elephant-validation-os]','validation_os.js','elephantValidationOs');
+    if(!document.querySelector('script[data-elephant-personal-capital]')){
+      const l=document.createElement('link');l.rel='stylesheet';l.href='personal_capital.css';l.dataset.elephantPersonalCapitalStyle='1';document.head.appendChild(l);
+      const s=document.createElement('script');s.src='personal_capital.js';s.defer=true;s.dataset.elephantPersonalCapital='1';document.head.appendChild(s);
+    }
   }
 
-  if(!document.querySelector('script[data-elephant-validation-os]')){
-    const s=document.createElement('script');
-    s.src='validation_os.js'; s.defer=true; s.dataset.elephantValidationOs='1';
-    document.head.appendChild(s);
-  }
-
-  // Capital v3 is a browser-local private optimizer. It consumes only public model
-  // artifacts; personal holdings/debt never enter GitHub or any server workflow.
-  if(!document.querySelector('script[data-elephant-personal-capital]')){
-    const l=document.createElement('link');l.rel='stylesheet';l.href='personal_capital.css';l.dataset.elephantPersonalCapitalStyle='1';document.head.appendChild(l);
-    const s=document.createElement('script');s.src='personal_capital.js';s.defer=true;s.dataset.elephantPersonalCapital='1';document.head.appendChild(s);
-  }
+  loadExtensions().catch(e=>console.warn('decision extensions unavailable',e));
 })();

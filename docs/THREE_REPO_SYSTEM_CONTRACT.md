@@ -104,19 +104,38 @@ The user should be able to move from action to evidence without mixing authority
 
 The overview should not duplicate every downstream tool. Detailed model validation, research SQL and raw coverage belong in dedicated tabs or expandable evidence surfaces.
 
-## Known model-semantics debt
+## Model-semantics contract and remaining debt
 
 These are not display bugs; they are explicit modeling assumptions or legacy names and must not be presented as objective economic facts.
 
-- **Elephant score weights and linear transforms are hand-defined heuristics.** They are deterministic and inspectable, but the chosen weights / saturation points are hypotheses until challenger / prospective validation demonstrates information value.
-- **Domestic Demand real-growth proxies use the approximation `nominal YoY - CPI YoY`.** That is close at ordinary inflation rates but is not the exact deflation formula `(1 + nominal)/(1 + inflation) - 1`. The UI should call these components proxies unless the engine is migrated and recalibrated.
-- **Financial Conditions assigns positive support to moderate USD/TWD increases.** This is an explicit export-oriented modeling assumption, not a universal statement that currency depreciation loosens financial conditions. Extreme FX moves can be risk even when the proxy score clips positive.
-- **stock `margin_of_safety_pct` is a legacy field name.** Its current formula is `base_fair_value / reference_price - 1`, i.e. base-case price upside, not the classical safety discount `(fair_value - price) / fair_value`. UI should display `Base upside` until a versioned schema migration changes the field.
+- **Elephant score weights and linear transforms are hand-defined heuristics.** They are deterministic and inspectable, but the chosen weights / saturation points remain hypotheses until challenger / prospective validation demonstrates information value.
+- **Domestic Demand real-growth components use exact multiplicative deflation.** Real wage and credit-card spending use `(1 + nominal YoY)/(1 + CPI YoY) - 1`; CPI missing means the real-growth component is missing rather than silently falling back to nominal growth.
+- **USD/TWD is diagnostic-only in Financial Conditions.** Exchange-rate direction is not assumed monotonic because competitiveness, imported inflation, capital flow and risk-off effects can conflict. Its deterministic score weight remains zero until explicit validation supports promotion.
+- **stock `margin_of_safety_pct` is a legacy field name.** Its current formula is `base_fair_value / reference_price - 1`, i.e. base-case price upside, not the classical safety discount `(fair_value - price) / fair_value`. UI displays `Base upside` until a versioned schema migration changes the field.
 - **stock Expected Return is scenario-probability weighted fair-value upside.** The scenario probabilities are model inputs; the number is not a statistically calibrated probability forecast unless prospective calibration establishes that claim.
 - **stock Alpha / Confidence are scores, not probabilities.** Current performance data can remain `INSUFFICIENT_HISTORY`; no score should be described as validated predictive skill before minimum sample requirements are met.
 
-## Known architecture debt
+## Canonical browser-local PortfolioState
 
-Elephant currently contains multiple browser-local portfolio interfaces (`Command Center`, Decision Engine portfolio envelope, Personal Capital v3). They serve related but not identical models and do not share one canonical state schema. Until consolidated, the UI should treat Personal Capital v3 as the most complete ruin/liquidity/leverage analysis surface and avoid implying that the smaller calculators are equivalent optimizers.
+Elephant uses one canonical browser-local state contract:
 
-The next structural cleanup should establish one browser-local `PortfolioState` contract and let other views become read-only projections of that state.
+```text
+elephant.portfolio.v2
+        ↓
+PortfolioState schema v2
+        ├─ Command Center
+        ├─ Decision Engine portfolio envelope
+        └─ Personal Capital v3
+```
+
+Rules:
+
+- legacy `elephant.portfolio.v1` and `elephant.personal.capital.v3` are migrated into schema v2 and remain temporary compatibility aliases;
+- writes are merged into the canonical state instead of replacing unrelated fields;
+- when detailed holdings are present, `equity` and `largest` are derived from those holdings and are authoritative;
+- a simplified calculator may update common fields such as total, cash or drawdown tolerance, but cannot overwrite holdings-derived equity / largest with contradictory values;
+- Personal Capital fields such as debt, collateral, maintenance threshold, liquidity need, human capital and transaction frictions remain preserved when simpler views write;
+- all of this state stays in browser `localStorage`; it is never written to GitHub or public artifacts;
+- PortfolioState only supplies private inputs to review models. It does not grant security BUY authority and does not place trades.
+
+The compatibility aliases are migration scaffolding, not additional sources of truth. A later cleanup may remove them only after the deployed population no longer depends on legacy keys.
