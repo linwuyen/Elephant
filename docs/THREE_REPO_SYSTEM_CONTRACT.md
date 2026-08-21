@@ -104,6 +104,17 @@ The user should be able to move from action to evidence without mixing authority
 
 The overview should not duplicate every downstream tool. Detailed model validation, research SQL and raw coverage belong in dedicated tabs or expandable evidence surfaces.
 
+## Known model-semantics debt
+
+These are not display bugs; they are explicit modeling assumptions or legacy names and must not be presented as objective economic facts.
+
+- **Elephant score weights and linear transforms are hand-defined heuristics.** They are deterministic and inspectable, but the chosen weights / saturation points are hypotheses until challenger / prospective validation demonstrates information value.
+- **Domestic Demand real-growth proxies use the approximation `nominal YoY - CPI YoY`.** That is close at ordinary inflation rates but is not the exact deflation formula `(1 + nominal)/(1 + inflation) - 1`. The UI should call these components proxies unless the engine is migrated and recalibrated.
+- **Financial Conditions assigns positive support to moderate USD/TWD increases.** This is an explicit export-oriented modeling assumption, not a universal statement that currency depreciation loosens financial conditions. Extreme FX moves can be risk even when the proxy score clips positive.
+- **stock `margin_of_safety_pct` is a legacy field name.** Its current formula is `base_fair_value / reference_price - 1`, i.e. base-case price upside, not the classical safety discount `(fair_value - price) / fair_value`. UI should display `Base upside` until a versioned schema migration changes the field.
+- **stock Expected Return is scenario-probability weighted fair-value upside.** The scenario probabilities are model inputs; the number is not a statistically calibrated probability forecast unless prospective calibration establishes that claim.
+- **stock Alpha / Confidence are scores, not probabilities.** Current performance data can remain `INSUFFICIENT_HISTORY`; no score should be described as validated predictive skill before minimum sample requirements are met.
+
 ## Known architecture debt
 
 Elephant currently contains multiple browser-local portfolio interfaces (`Command Center`, Decision Engine portfolio envelope, Personal Capital v3). They serve related but not identical models and do not share one canonical state schema. Until consolidated, the UI should treat Personal Capital v3 as the most complete ruin/liquidity/leverage analysis surface and avoid implying that the smaller calculators are equivalent optimizers.
