@@ -76,6 +76,21 @@ def pct(a, b):
     return None if a is None or b in (None, 0) else (float(a) / float(b) - 1) * 100
 
 
+def real_yoy(nominal_yoy, inflation_yoy):
+    """Exact multiplicative deflation of a nominal YoY growth rate.
+
+    If nominal growth is g_n and inflation is pi, real growth is
+    (1 + g_n) / (1 + pi) - 1. Inputs and output are percentage points.
+    """
+    if nominal_yoy is None or inflation_yoy is None:
+        return None
+    price_factor = 1.0 + float(inflation_yoy) / 100.0
+    if price_factor <= 0:
+        return None
+    nominal_factor = 1.0 + float(nominal_yoy) / 100.0
+    return (nominal_factor / price_factor - 1.0) * 100.0
+
+
 def yoy(s, p):
     return pct(value(s, p), value(s, month_shift(p, -12)))
 
@@ -236,7 +251,7 @@ def domestic_score(period, ndc, inputs):
     wage_y = yoy(wage, wp) if wp else None
     cpi = inp.get('labor.cpi_yoy')
     cpi_v, _ = latest_before(cpi, wp or period, 2)
-    real_wage = None if wage_y is None or cpi_v is None else wage_y - float(cpi_v)
+    real_wage = real_yoy(wage_y, cpi_v)
 
     emp = inp.get('dgbas.employment_total')
     _, emp_p = latest_before(emp, period, 2)
@@ -246,11 +261,11 @@ def domestic_score(period, ndc, inputs):
     _, card_p = latest_before(card, period, 2)
     card_y = yoy(card, card_p) if card_p else None
     card_cpi, _ = latest_before(cpi, card_p or period, 2)
-    card_real_y = None if card_y is None else card_y - (float(card_cpi) if card_cpi is not None else 0.0)
-    card_note = '聯卡中心處理簽帳金額 YoY 減 CPI YoY；僅作信用卡消費 proxy' if card_cpi is not None else '聯卡中心處理簽帳金額 YoY；CPI 缺值時未實質化，僅作 proxy'
+    card_real_y = real_yoy(card_y, card_cpi)
+    card_note = '聯卡中心處理簽帳金額以 CPI YoY 精確乘法實質化；僅作信用卡消費 proxy' if card_cpi is not None else '聯卡中心處理簽帳金額有 YoY，但 CPI 缺值時不產生實質消費 proxy'
 
     parts = [
-        component('real_wage', '實質薪資動能', real_wage, None if real_wage is None else real_wage / 4 * 100, WEIGHTS['domestic']['real_wage'], wp, '平均每月總薪資 YoY 減 CPI YoY', 'DGBAS/MOL'),
+        component('real_wage', '實質薪資動能', real_wage, None if real_wage is None else real_wage / 4 * 100, WEIGHTS['domestic']['real_wage'], wp, '平均每月總薪資以 (1+nominal YoY)/(1+CPI YoY)-1 精確實質化', 'DGBAS/MOL'),
         component('employment', '受僱員工人數', emp_y, None if emp_y is None else emp_y / 2 * 100, WEIGHTS['domestic']['employment'], emp_p, '工業及服務業受僱員工人數 YoY', 'DGBAS'),
         component('retail', '零售消費', retail_y, None if retail_y is None else retail_y / 10 * 100, WEIGHTS['domestic']['retail'], rp, retail_note, 'MOEA'),
         component('food', '餐飲消費', food_y, None if food_y is None else food_y / 10 * 100, WEIGHTS['domestic']['food'], fp, '餐飲營業額 YoY', 'MOEA'),
@@ -350,6 +365,8 @@ def generate():
             'growth': WEIGHTS['growth'],
             'domestic': WEIGHTS['domestic'],
             'financial': WEIGHTS['financial'],
+            'real_growth_formula': '(1+nominal_yoy/100)/(1+cpi_yoy/100)-1',
+            'real_growth_policy': 'CPI 缺值時不以 nominal YoY 冒充 real YoY；該 component 缺值並由既有權重正規化與 coverage confidence 處理。',
             'exchange_rate_assumption': 'USD/TWD 上升代表新台幣貶值；在本出口導向 Financial Conditions proxy 中視為較寬鬆，但極端匯率波動仍應另外視為風險。',
         },
         'sources': inputs.get('catalogs', {}),
