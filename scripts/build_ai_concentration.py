@@ -228,6 +228,7 @@ def generate():
 
     prod = industry.get('datasets', {}).get('moea.industry.production', {}).get('series', {}).get('C', {})
     current_period = prod.get('data', [])[-1][0] if prod.get('data') else decision_inputs.get('latest_period')
+    current_period = str(current_period) if current_period else None
     current = score_for(current_period, industry, decision_inputs, ai_inputs) if current_period else None
 
     periods = set()
@@ -237,7 +238,10 @@ def generate():
         periods.update(str(p) for p, _ in s.get('data', []) if len(str(p)) == 7)
     for s in ai_inputs.get('series', {}).values():
         periods.update(str(p) for p, _ in s.get('data', []) if len(str(p)) == 7)
-    periods = sorted(periods, key=period_key)[-120:]
+    # The AI score's current observation is anchored to manufacturing production.
+    # Inputs that publish one month earlier/later may contribute through the existing
+    # lag rules, but history must never extend beyond that same common as-of month.
+    periods = [p for p in sorted(periods, key=period_key) if not current_period or p <= current_period][-120:]
     history = []
     for p in periods:
         r = score_for(p, industry, decision_inputs, ai_inputs)
@@ -254,6 +258,8 @@ def generate():
         'weights': WEIGHTS,
         'meaning': '分數越高代表成長越集中於 AI／電子鏈；不是景氣好壞分數。',
         'missing': '缺值只對可用元件重新正規化；Confidence 等於可用原始權重。',
+        'common_as_of': current_period,
+        'history_policy': '歷史序列不得晚於 current common_as_of；較新的上游月份只能透過既有 lag 規則進入之後的共同月份。',
         'export_catalog': ai_inputs.get('catalog'),
     }
     scores['generated_at'] = dt.datetime.now(TZ).replace(microsecond=0).isoformat()
