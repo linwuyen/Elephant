@@ -70,4 +70,5 @@ if errors:
     raise SystemExit(1)
 
 print('All critical sources healthy and fresh enough for their publication cadence.')
-print('DGBAS/MOEA/RIS/NDC are critical; SEGIS remains non-critical until a stable public export or credentials are available.')
+segis = status.get('sources', {}).get('segis', {})
+print(f"SEGIS structural context: {segis.get('status','unknown')} latest={segis.get('latest_period')} rows={segis.get('rows')}; it remains non-critical to deterministic macro scoring.")
