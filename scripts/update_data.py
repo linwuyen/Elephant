@@ -127,7 +127,6 @@ def main():
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
-    build_validation_targets.main if False else None
     save_json('validation_targets.json', build_validation_targets.build())
     build_ai_concentration.generate()
     build_model_validation.generate()
