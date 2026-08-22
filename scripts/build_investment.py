@@ -43,6 +43,27 @@ def _age_days(as_of: str | None, now_date: dt.date):
         return None
 
 
+def _canonical_valuation(asset: dict):
+    """Consume stock schema v6 while retaining read-only support for the last v5 snapshot.
+
+    `base_upside_pct` is the canonical quantity. A legacy MOS-named field is read only
+    as migration fallback and is never republished by Elephant.
+    """
+    metrics = asset.get("valuation_metrics") or {}
+    model = asset.get("valuation_model") or {}
+    expected = metrics.get("expected_return_pct")
+    if expected is None:
+        expected = model.get("expected_return_pct")
+    base_upside = metrics.get("base_upside_pct")
+    if base_upside is None:
+        base_upside = model.get("base_upside_pct")
+    if base_upside is None:
+        base_upside = metrics.get("margin_of_safety_pct")
+    if base_upside is None:
+        base_upside = model.get("margin_of_safety_pct")
+    return expected, base_upside
+
+
 def build(alpha_engine: dict, summary: dict, decision_scores: dict, now: dt.datetime | None = None):
     now = now or dt.datetime.now(TZ).replace(microsecond=0)
     alpha = alpha_engine.get("alpha", {})
@@ -61,7 +82,7 @@ def build(alpha_engine: dict, summary: dict, decision_scores: dict, now: dt.date
     benchmark = alpha.get("benchmark_asset", {})
     researched = []
     for stock in sorted(alpha.get("stocks", []), key=lambda x: x.get("rank", 9999)):
-        vm = stock.get("valuation_model", {})
+        expected_return, base_upside = _canonical_valuation(stock)
         researched.append({
             "rank": stock.get("rank"),
             "ticker": stock.get("ticker"),
@@ -72,8 +93,8 @@ def build(alpha_engine: dict, summary: dict, decision_scores: dict, now: dt.date
             "action": stock.get("action"),
             "reference_price": stock.get("reference_price"),
             "reference_price_date": stock.get("reference_price_date"),
-            "expected_return_pct": vm.get("expected_return_pct"),
-            "margin_of_safety_pct": vm.get("margin_of_safety_pct"),
+            "expected_return_pct": expected_return,
+            "base_upside_pct": base_upside,
             "alpha_spread_pct": stock.get("alpha_spread_pct"),
             "thesis": stock.get("thesis"),
             "next_check": stock.get("next_check"),
@@ -114,15 +135,16 @@ def build(alpha_engine: dict, summary: dict, decision_scores: dict, now: dt.date
     else:
         selection_text = "目前沒有 BUY CANDIDATE；保持研究與等待，不因總經偏強自動升級個股。"
 
-    bvm = benchmark.get("valuation_model", {})
+    benchmark_expected, benchmark_base_upside = _canonical_valuation(benchmark)
     return {
-        "version": 1,
+        "version": 2,
         "generated_at": now.isoformat(),
         "status": "DEGRADED" if research_stale or screen_stale or screen_meta.get("status") != "COMPLETE" else "COMPLETE",
         "architecture": {
             "product": "Elephant",
             "macro_engine": "Elephant deterministic economic diagnosis",
             "alpha_engine": "linwuyen/stock",
+            "alpha_schema": alpha_meta.get("schema_version"),
             "contract": "Macro context is orthogonal to Alpha Score. Stock Buy Gate remains authoritative.",
         },
         "sources": {
@@ -153,7 +175,8 @@ def build(alpha_engine: dict, summary: dict, decision_scores: dict, now: dt.date
             "name": benchmark.get("name"),
             "reference_price": benchmark.get("reference_price"),
             "reference_price_date": benchmark.get("reference_price_date"),
-            "expected_return_pct": bvm.get("expected_return_pct"),
+            "expected_return_pct": benchmark_expected,
+            "base_upside_pct": benchmark_base_upside,
             "confidence_score": benchmark.get("confidence_score"),
             "rotation_event": alpha.get("rotation_event", {}),
         },
@@ -171,6 +194,7 @@ def build(alpha_engine: dict, summary: dict, decision_scores: dict, now: dt.date
             "macro_context_cannot_create_buy_candidate": True,
             "screen_is_not_buy_gate": True,
             "stock_buy_gate_authoritative": True,
+            "stock_base_upside_semantics_preserved": True,
             "no_automatic_trading": True,
         },
     }
