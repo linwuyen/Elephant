@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import datetime as dt
-import html
 import json
-import re
 import sys
 from pathlib import Path
-from common import TZ, URLS, load_json, save_json, request_bytes, decode_text
+from common import TZ, load_json, save_json
 import build_summary
 import build_history
 import build_decision_scores
@@ -32,20 +30,7 @@ import source_ai_concentration
 import source_supplements
 import source_alpha
 import source_twse_market_live
-
-
-def segis(offline=False):
-    if offline:
-        return {'status': 'blocked', 'latest_period': None, 'message': 'SEGIS 鄉鎮市區工商家數欄位已註冊；未使用測試快照，不產生假資料。', 'source_url': URLS['segis_catalog']}
-    msg = 'SEGIS 鄉鎮市區工商家數欄位已註冊；未取得穩定可重現公開直鏈或 APP ID/API Key 前不自動寫入。'
-    found = None
-    try:
-        text = html.unescape(decode_text(request_bytes(URLS['segis_catalog'], 45, 1)[0]))
-        m = re.search(r'https?://[^"\'<> ]*reqcontroller\.file\?method=filedown\.downloadproductfile[^"\'<> ]+', text)
-        found = m.group(0).replace('&amp;', '&') if m else None
-    except Exception as e:
-        msg += f' Catalog probe: {type(e).__name__}.'
-    return {'status': 'blocked', 'latest_period': None, 'message': msg, 'candidate_download': found, 'source_url': URLS['segis_catalog']}
+import source_segis
 
 
 def coverage(status):
@@ -55,6 +40,7 @@ def coverage(status):
     ndc = load_json('ndc.json', {})
     decision = load_json('decision_inputs.json', {})
     ai = load_json('ai_inputs.json', {})
+    segis = load_json('segis.json', {})
     rows = []
     for iid, s in macro.get('series', {}).items():
         d = s.get('data', [])
@@ -75,6 +61,8 @@ def coverage(status):
     for iid, s in ai.get('series', {}).items():
         d=s.get('data',[])
         rows.append({'source':'mof','dataset':'official.ai_concentration_inputs','indicator':iid,'name':s.get('name',iid),'frequency':'monthly','points':len(d),'period':f'{d[0][0]}..{d[-1][0]}' if d else '-'})
+    if segis.get('rows'):
+        rows.append({'source':'segis','dataset':segis.get('dataset_id','segis.business_count.township'),'indicator':'business_count','name':'行政區工商家數（鄉鎮市區）','frequency':'official snapshot','points':len(segis.get('rows',[])),'period':segis.get('latest_period','-')})
     save_json('coverage.json', {'datasets': rows, 'source_status': status['sources']})
 
 
@@ -104,7 +92,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 19,
+        'pipeline_version': 20,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -123,7 +111,9 @@ def main():
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
     refresh_source(status, bad, 'inventory_manufacturing', source_moea_live_tables.update_inventory, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
-    status['sources']['segis'] = segis(bool(a.offline_dir))
+    # SEGIS is an official structural-context source. Failure preserves last-good
+    # data but never blocks or changes deterministic macro/security authority.
+    refresh_source(status, bad, 'segis', source_segis.update, a.offline_dir, False)
     status['critical_failures'] = bad
     if not bad:
         status['last_successful_sync_at'] = now

@@ -1,12 +1,7 @@
 (()=>{
-  const KEY='elephant.portfolio.v2';
-  const LEGACY_KEYS=['elephant.portfolio.v1','elephant.personal.capital.v3'];
-  const aliases=new Set([KEY,...LEGACY_KEYS]);
+  const KEY='elephant.portfolio.v3';
+  const MIGRATION_KEYS=['elephant.portfolio.v2','elephant.portfolio.v1','elephant.personal.capital.v3'];
   const storage=window.localStorage;
-  const proto=Object.getPrototypeOf(storage);
-  const rawGet=proto.getItem;
-  const rawSet=proto.setItem;
-  const rawRemove=proto.removeItem;
 
   function parseJson(raw){
     if(!raw)return {};
@@ -23,7 +18,7 @@
   }
 
   function normalize(raw={}){
-    const out={...raw,schema_version:2};
+    const out={...raw,schema_version:3};
     const rows=parseHoldings(out.holdings);
     if(rows.length){
       out.equity=rows.reduce((sum,x)=>sum+x.value,0);
@@ -44,55 +39,61 @@
     return out;
   }
 
-  function canonicalRaw(){return parseJson(rawGet.call(storage,KEY))}
+  function canonicalRaw(){return parseJson(storage.getItem(KEY))}
+
+  function cleanupMigrationKeys(){
+    for(const key of MIGRATION_KEYS)storage.removeItem(key);
+  }
+
+  function persist(next){
+    const normalized=normalize(next);
+    storage.setItem(KEY,JSON.stringify(normalized));
+    const verify=canonicalRaw();
+    if(!Object.keys(verify).length||verify.schema_version!==3)throw new Error('PortfolioState v3 persistence verification failed');
+    cleanupMigrationKeys();
+    return normalize(verify);
+  }
 
   function migrate(){
     const existing=canonicalRaw();
-    if(Object.keys(existing).length)return normalize(existing);
-    const simple=parseJson(rawGet.call(storage,'elephant.portfolio.v1'));
-    const detailed=parseJson(rawGet.call(storage,'elephant.personal.capital.v3'));
-    if(!Object.keys(simple).length&&!Object.keys(detailed).length)return normalize({});
-    // Detailed Personal Capital fields own holdings/debt/liquidity semantics.
-    // Simpler v1 fields only fill gaps during one-time migration.
+    if(Object.keys(existing).length){
+      const current=persist(existing);
+      return current;
+    }
+
+    // v2 was the previous canonical source and therefore wins over stale legacy
+    // aliases if it exists. Only browsers without v2 fall back to the old v1 +
+    // Personal Capital v3 pair, where detailed holdings/debt semantics win.
+    const previousCanonical=parseJson(storage.getItem('elephant.portfolio.v2'));
+    if(Object.keys(previousCanonical).length)return persist(previousCanonical);
+
+    const simple=parseJson(storage.getItem('elephant.portfolio.v1'));
+    const detailed=parseJson(storage.getItem('elephant.personal.capital.v3'));
     const seed={...simple,...detailed};
-    const next=normalize(seed);
-    rawSet.call(storage,KEY,JSON.stringify(next));
-    return next;
+    if(Object.keys(seed).length)return persist(seed);
+
+    cleanupMigrationKeys();
+    return normalize({});
   }
 
   function load(){
     const current=canonicalRaw();
-    return Object.keys(current).length?normalize(current):migrate();
+    if(Object.keys(current).length){
+      cleanupMigrationKeys();
+      return normalize(current);
+    }
+    return migrate();
   }
 
   function save(patch={}){
-    const next=normalize({...load(),...(patch||{})});
-    rawSet.call(storage,KEY,JSON.stringify(next));
-    return next;
+    return persist({...load(),...(patch||{})});
   }
 
   function clear(){
-    rawRemove.call(storage,KEY);
-    for(const key of LEGACY_KEYS)rawRemove.call(storage,key);
+    storage.removeItem(KEY);
+    cleanupMigrationKeys();
   }
 
-  // Compatibility shim: existing views can keep their old key names while all
-  // reads/writes are routed through one canonical schema. Writes are merged,
-  // never wholesale-replaced; detailed holdings derive equity/largest so a
-  // simplified calculator cannot silently contradict the detailed portfolio.
-  proto.getItem=function(key){
-    if(this===storage&&aliases.has(String(key)))return JSON.stringify(load());
-    return rawGet.call(this,key);
-  };
-  proto.setItem=function(key,value){
-    if(this===storage&&aliases.has(String(key))){save(parseJson(String(value)));return;}
-    return rawSet.call(this,key,value);
-  };
-  proto.removeItem=function(key){
-    if(this===storage&&aliases.has(String(key))){clear();return;}
-    return rawRemove.call(this,key);
-  };
-
   migrate();
-  window.ElephantPortfolioState={KEY,schemaVersion:2,legacyKeys:[...LEGACY_KEYS],load,save,clear,normalize,parseHoldings};
+  window.ElephantPortfolioState={KEY,schemaVersion:3,migrationKeys:[...MIGRATION_KEYS],load,save,clear,normalize,parseHoldings};
 })();

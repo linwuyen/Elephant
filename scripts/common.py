@@ -16,7 +16,12 @@ URLS={
  'moea_sales_value':'https://service.moea.gov.tw/EE520/opendata/f.csv',
  'moea_investment':'https://service.moea.gov.tw/EE520/opendata/ec.csv',
  'ris_base':'https://www.ris.gov.tw/documents/data/en/3',
- 'segis_catalog':'https://segis.moi.gov.tw/STATCloud/QueryInterfaceView?COL=iirDqGNXuWYCRndUIOG7Eg%253d%253d&MCOL=5T6bncseYLcCqo8jYHyJ8A%253d%253d',
+ # Canonical SEGIS target is the nationwide township/district business-count
+ # product, not the county-only variant. 114Y12 is the latest public product
+ # verified on 2026-08-22; source discovery must fail closed if SEGIS rotates
+ # the opaque COL/MCOL identifiers before a reproducible machine endpoint is found.
+ 'segis_catalog':'https://segis.moi.gov.tw/STATCloud/QueryInterfaceView?COL=8%252fnKF8Qu3MIbJoiTa%252f3Gng%253d%253d&MCOL=fACyEf%252f7IGprAbIDY0oUgQ%253d%253d',
+ 'segis_dataset_catalog':'https://segis.moi.gov.tw/STATCloud/Catalog',
 }
 
 def load_json(name,default):

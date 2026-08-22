@@ -92,6 +92,7 @@ jobs:
           python scripts/test_moea_dataset.py
           python scripts/test_ndc_zip_selection.py
           python scripts/test_twse_market_live.py
+          python scripts/test_segis_public.py
           python scripts/validate_intelligence_layer.py
           python scripts/test_source_alpha_v6.py
           python scripts/validate_investment.py
