@@ -5,9 +5,9 @@
   const nfmt=v=>v==null||Number.isNaN(Number(v))?'—':Number(v).toLocaleString('zh-TW',{maximumFractionDigits:1});
   const signed=v=>v==null?'—':`${Number(v)>=0?'+':''}${Number(v).toFixed(0)}`;
   const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-  const LOCAL_KEY='elephant.portfolio.v1';
   let DATA=null;
 
+  function portfolioApi(){return window.ElephantPortfolioState}
   function addStyle(){
     if(document.querySelector('link[data-elephant-engine-style]'))return;
     const l=document.createElement('link');l.rel='stylesheet';l.href='decision_engine.css';l.dataset.elephantEngineStyle='1';document.head.appendChild(l);
@@ -47,9 +47,10 @@
   }
 
   function loadPortfolio(){
-    try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}')}catch{return {}}
+    try{return portfolioApi()?.load?.()||{}}catch{return {}}
   }
-  function savePortfolio(v){localStorage.setItem(LOCAL_KEY,JSON.stringify(v))}
+  function savePortfolio(v){try{return portfolioApi()?.save?.(v||{})||loadPortfolio()}catch{return loadPortfolio()}}
+  function clearPortfolio(){try{portfolioApi()?.clear?.()}catch{}}
   function val(id){const x=Number($(id)?.value);return Number.isFinite(x)?x:0}
 
   function calculatePortfolio(){
@@ -71,7 +72,7 @@
 
   function portfolioForm(){
     const p=loadPortfolio();
-    return `<div class="engine-form"><label>可投資資產總額<input id="engineTotal" type="number" min="0" step="1000" value="${esc(p.total??'')}"></label><label>目前股票市值<input id="engineEquity" type="number" min="0" step="1000" value="${esc(p.equity??'')}"></label><label>目前現金<input id="engineCash" type="number" min="0" step="1000" value="${esc(p.cash??'')}"></label><label>最大單一股票市值<input id="engineLargest" type="number" min="0" step="1000" value="${esc(p.largest??'')}"></label><label>可接受最大回撤 %<input id="engineDrawdown" type="number" min="5" max="60" step="1" value="${esc(p.maxDd??20)}"></label></div><div class="engine-actions"><button class="secondary" id="engineCalc">計算風險額度</button><button class="secondary" id="engineClear">清除本機資料</button></div><div id="enginePortfolioResult" class="engine-result"></div><div class="engine-local">🔒 這些數字只存在你的瀏覽器 localStorage，不會上傳 GitHub，也不會寫進 Elephant 公開資料。</div>`;
+    return `<div class="engine-form"><label>可投資資產總額<input id="engineTotal" type="number" min="0" step="1000" value="${esc(p.total??'')}"></label><label>目前股票市值<input id="engineEquity" type="number" min="0" step="1000" value="${esc(p.equity??'')}"></label><label>目前現金<input id="engineCash" type="number" min="0" step="1000" value="${esc(p.cash??'')}"></label><label>最大單一股票市值<input id="engineLargest" type="number" min="0" step="1000" value="${esc(p.largest??'')}"></label><label>可接受最大回撤 %<input id="engineDrawdown" type="number" min="5" max="60" step="1" value="${esc(p.maxDd??20)}"></label></div><div class="engine-actions"><button class="secondary" id="engineCalc">計算風險額度</button><button class="secondary" id="engineClear">清除本機資料</button></div><div id="enginePortfolioResult" class="engine-result"></div><div class="engine-local">🔒 這些數字只存在你的瀏覽器 canonical PortfolioState，不會上傳 GitHub，也不會寫進 Elephant 公開資料。</div>`;
   }
 
   function render(){
@@ -94,7 +95,7 @@
       <div class="engine-contract"><b>權限邊界：</b> Official data → deterministic Scores；Consultant research → context only；Macro → risk budget only；Alpha Buy Gate → 個股 action authority；Portfolio input → browser-local only；沒有自動交易。</div>
     </div>`;
     $('#engineCalc')?.addEventListener('click',calculatePortfolio);
-    $('#engineClear')?.addEventListener('click',()=>{localStorage.removeItem(LOCAL_KEY);['#engineTotal','#engineEquity','#engineCash','#engineLargest'].forEach(id=>{if($(id))$(id).value=''});if($('#engineDrawdown'))$('#engineDrawdown').value=20;calculatePortfolio()});
+    $('#engineClear')?.addEventListener('click',()=>{clearPortfolio();['#engineTotal','#engineEquity','#engineCash','#engineLargest'].forEach(id=>{if($(id))$(id).value=''});if($('#engineDrawdown'))$('#engineDrawdown').value=20;calculatePortfolio()});
     calculatePortfolio();
   }
 

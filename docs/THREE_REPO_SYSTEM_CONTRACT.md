@@ -28,6 +28,7 @@ TWSE / TPEx → stock → Alpha schema v6 ─→ Elephant
               prospective calibration   │
                                         ↓
 Official Taiwan macro data ─────────→ Elephant
+SEGIS structural context ────────────→ Elephant
                                         ↓
                          Macro regime / risk envelope
                          Capital Allocation OS
@@ -46,6 +47,7 @@ There is intentionally no direct Consultant_System → stock scoring path. Exter
 | Security BUY / VERIFY / WATCH / AVOID | stock | Deterministic Security Buy Gate | Be overridden by macro optimism |
 | Security realized/probability calibration evidence | stock | Point-in-time forecasts + future market outcomes | Retroactively rewrite historical priors or bypass Buy Gate |
 | Macro diagnosis | Elephant | Official economic data | Be changed by consultant narrative |
+| Structural geographic context | Elephant | Validated official SEGIS public machine data | Change deterministic macro/security scores |
 | Research Evidence / Contradictions / Risks | Elephant consuming Consultant_System | Validated consultant snapshot | Change deterministic score |
 | Cash / debt / leverage / concentration / sizing | Elephant | Public model artifacts + browser-local user inputs | Write private portfolio state to GitHub |
 | Model challenger review | Elephant | Point-in-time/common-sample validation evidence | Auto-promote a challenger without sample gates/version change |
@@ -82,6 +84,23 @@ The canonical security artifact is stock Alpha schema v6 (`security-v6.0.0`). El
 - prospective Bear/Base/Bull calibration preserves a minimum resolved-sample guardrail.
 
 Elephant may attach macro context and portfolio constraints, but must preserve the upstream stock action as security authority. Elephant republishes the quantity as `base_upside_pct`; it does not reintroduce the legacy MOS name.
+
+### SEGIS → Elephant
+
+SEGIS is an official **structural-context** source, not a deterministic-score input. The current canonical product is `114年12月行政區工商家數_鄉鎮市區`.
+
+Elephant accepts a refresh only when:
+
+- the official product page still declares the exact product public and no-application-required;
+- the page itself advertises and exposes the JSON machine service URL;
+- `Info`, `ColumnList` and `RowDataList` are present and machine-decodable;
+- declared `OutTotal` equals the actual row count;
+- `INFO_TIME`, county/town IDs and names, and `C_CNT` are present;
+- township IDs are unique;
+- counts are finite and non-negative;
+- the snapshot contains one coherent official period.
+
+The normalized artifact is `data/segis.json`. Administrative coverage follows the official product; missing geography is never imputed. SEGIS remains non-critical to deterministic macro scoring, and a failed refresh preserves last-good data.
 
 ## Visualization contract
 
@@ -168,17 +187,21 @@ Elephant consumes this ledger as **calibration evidence only**. It may support a
 Elephant uses one canonical browser-local state contract:
 
 ```text
-elephant.portfolio.v2
+elephant.portfolio.v3
         ↓
-PortfolioState schema v2
+PortfolioState schema v3
         ├─ Command Center
         ├─ Decision Engine portfolio envelope
-        └─ Personal Capital v3
+        └─ Personal Capital
 ```
 
 Rules:
 
-- legacy `elephant.portfolio.v1` and `elephant.personal.capital.v3` are migrated into schema v2 and remain temporary compatibility aliases;
+- `elephant.portfolio.v2` is the authoritative previous-version migration source when present;
+- only browsers without v2 fall back to the older `elephant.portfolio.v1` + `elephant.personal.capital.v3` pair, where detailed holdings/debt semantics win;
+- migration writes and verifies `elephant.portfolio.v3` before deleting all migration-source keys;
+- old keys are no longer live aliases and post-migration writes to them cannot change canonical state;
+- all three browser consumers read/write only through `window.ElephantPortfolioState`;
 - writes are merged into the canonical state instead of replacing unrelated fields;
 - when detailed holdings are present, `equity` and `largest` are derived from those holdings and are authoritative;
 - a simplified calculator may update common fields such as total, cash or drawdown tolerance, but cannot overwrite holdings-derived equity / largest with contradictory values;
@@ -186,11 +209,7 @@ Rules:
 - all state stays in browser `localStorage`; it is never written to GitHub or public artifacts;
 - PortfolioState only supplies private inputs to review models. It does not grant security BUY authority and does not place trades.
 
-### Legacy-alias removal gate
-
-The compatibility aliases are migration scaffolding, not additional sources of truth. They must **not** be removed merely to make the code look cleaner, because there is no server-side telemetry for private localStorage migration.
-
-Removal is allowed only after a deliberately versioned browser migration release can guarantee that legacy values have been copied into `elephant.portfolio.v2` before alias deletion and regression tests prove fresh-v2 and legacy-upgrade paths. Until that gate is satisfied, retaining the aliases is the safe completed state rather than unfinished work.
+Migration is covered by both deterministic storage tests and a real Chromium E2E that starts from legacy state, loads the deployed application shell, writes through Command Center and Decision Engine, reloads, and confirms all views rehydrate from one v3 key.
 
 ## External-source constraints
 
@@ -201,6 +220,6 @@ Current source policy:
 - DGBAS wage/employment XML may fall back to equivalent official publication/news semantics when the XML transport certificate fails validation.
 - MOEA live structural tables and official fallbacks are preferred over dead legacy endpoints; last-good retention is explicit.
 - non-critical benchmark pages may retain last-good first-party observations when a current parse fails.
-- SEGIS remains blocked until a stable reproducible public direct endpoint or authorized APP ID/API key exists. No unstable session URL, invented value or credential bypass is permitted.
+- SEGIS uses the JSON service URL advertised by the official canonical product page, validates the complete machine schema, and writes normalized township/district business counts to `data/segis.json`. It is structural context only and never changes deterministic score authority.
 
-These blocked/degraded states are intentional integrity controls, not permission to weaken verification.
+Degraded states remain explicit integrity controls, not permission to weaken verification.

@@ -5,14 +5,11 @@
   const pct=(v,d=1)=>v==null?'—':`${num(v,d)}%`;
   const signed=(v,d=1,suffix='')=>v==null?'—':`${Number(v)>=0?'+':''}${num(v,d)}${suffix}`;
   const money=v=>v==null||!Number.isFinite(Number(v))?'—':`NT$ ${Math.round(Number(v)).toLocaleString('zh-TW')}`;
-  const LOCAL_KEY='elephant.portfolio.v1';
   let DATA=null;
 
-  function loadPortfolio(){try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}')}catch{return {}}}
-  function savePortfolio(next){
-    const old=loadPortfolio();
-    try{localStorage.setItem(LOCAL_KEY,JSON.stringify({...old,...next}))}catch(_){}
-  }
+  function portfolioApi(){return window.ElephantPortfolioState}
+  function loadPortfolio(){try{return portfolioApi()?.load?.()||{}}catch{return {}}}
+  function savePortfolio(next){try{return portfolioApi()?.save?.(next||{})||loadPortfolio()}catch(_){return loadPortfolio()}}
 
   function badge(code){
     const cls=code==='REDUCE_RISK'||code==='BLOCKED'?'risk':code==='DEPLOY_SELECTIVELY'?'good':'warn';
@@ -88,7 +85,7 @@
 
   function portfolioPanel(){
     const p=loadPortfolio();
-    return `<article class="dcc-card dcc-personal"><div class="dcc-card-head"><div><span class="kicker">YOUR MONEY</span><h3>把模型直接換成你的金額</h3></div><span class="dcc-lock">🔒 browser-local</span></div><div class="dcc-inputs"><label>可投資資產總額<input id="dccTotal" type="number" min="0" step="1000" value="${esc(p.total??'')}"></label><label>目前股票市值<input id="dccEquity" type="number" min="0" step="1000" value="${esc(p.equity??'')}"></label><label>目前現金／低風險<input id="dccCash" type="number" min="0" step="1000" value="${esc(p.cash??'')}"></label></div><div id="dccPersonalResult"></div><small class="dcc-privacy">不會上傳 GitHub、不會寫進 Elephant public artifacts；沿用 Decision Engine 的 localStorage portfolio state。</small></article>`;
+    return `<article class="dcc-card dcc-personal"><div class="dcc-card-head"><div><span class="kicker">YOUR MONEY</span><h3>把模型直接換成你的金額</h3></div><span class="dcc-lock">🔒 browser-local</span></div><div class="dcc-inputs"><label>可投資資產總額<input id="dccTotal" type="number" min="0" step="1000" value="${esc(p.total??'')}"></label><label>目前股票市值<input id="dccEquity" type="number" min="0" step="1000" value="${esc(p.equity??'')}"></label><label>目前現金／低風險<input id="dccCash" type="number" min="0" step="1000" value="${esc(p.cash??'')}"></label></div><div id="dccPersonalResult"></div><small class="dcc-privacy">不會上傳 GitHub、不會寫進 Elephant public artifacts；沿用 canonical PortfolioState。</small></article>`;
   }
 
   function navigateEvidence(target){
