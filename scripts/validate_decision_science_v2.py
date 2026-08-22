@@ -23,18 +23,53 @@ assert pit['minimum_months_for_model_promotion']>=36
 if pit['prospective_vintages_eligible_for_promotion']:
  assert pit['distinct_snapshot_months']>=pit['minimum_months_for_model_promotion']
 
+target_contract=load('validation-target-contract-v1.json')
+assert target_contract['contract']=='independent-economic-validation-targets-v1'
+assert target_contract['automatic_promotion'] is False
+assert 'circular' in target_contract['supersession_reason'].lower()
+expected_target_ids={
+ 'growth_persistence':'future_realized_manufacturing_activity',
+ 'domestic_demand':'future_realized_domestic_activity',
+ 'financial_conditions':'future_realized_financing_support',
+}
+for dim,target_id in expected_target_ids.items():
+ cfg=target_contract['targets'][dim]
+ assert cfg['id']==target_id
+ assert cfg['aggregation']=='equal_mean_of_fixed_component_transforms'
+ assert int(cfg['minimum_components'])>=2
+
+targets=load('validation_targets.json')
+assert targets['contract']=='independent-economic-validation-targets-v1'
+assert targets['promotion_authority'] is False
+assert targets['historical_mode']=='LATEST_REVISED_RECONSTRUCTION'
+for dim,target_id in expected_target_ids.items():
+ rows=targets['history'][dim]
+ assert rows
+ periods=[x['period'] for x in rows]
+ assert periods==sorted(periods)
+ for row in rows:
+  assert row['target_id']==target_id
+  assert -100<=float(row['value'])<=100
+  assert row['components']
+  assert all(x['key'] in target_contract['targets'][dim]['components'] for x in row['components'])
+
 val=load('validation_os.json')
-assert str(val['product']).startswith('Elephant Validation OS v1.2')
+assert str(val['product']).startswith('Elephant Validation OS v1.3')
 assert val['point_in_time_validation']['contract']=='point-in-time-validation-gate-v1'
 assert val['data_quality_slo']['contract']=='data-quality-slo-v1'
-for dim in ('growth_persistence','domestic_demand','financial_conditions'):
+assert val['validation_target_contract']['contract']=='independent-economic-validation-targets-v1'
+assert val['score_challengers']['target_contract']=='independent-economic-validation-targets-v1'
+for dim,target_id in expected_target_ids.items():
  row=val['score_challengers']['dimensions'][dim]
- assert row['target']['primary']=='future_same_dimension_composite'
+ assert row['target']['primary']==target_id
+ assert row['target']['independent_of_model_aggregate_weights'] is True
  assert row['automatic_promotion'] is False
  assert row['historical_mode']=='LATEST_REVISED_RECONSTRUCTION'
  for h in ('3m','6m'):
-  assert 'primary_improvement' in row['horizons'][h]
-  assert 'secondary_cycle_diagnostic' in row['horizons'][h]
+  hr=row['horizons'][h]
+  assert 'primary_improvement' in hr
+  assert 'secondary_cycle_diagnostic' in hr
+  assert 'neither champion nor challenger aggregate weights' in hr['contract']
 
 attr=load('decision_attribution.json')
 assert attr['contract']=='decision-change-attribution-v1'
@@ -63,4 +98,4 @@ assert promo['point_in_time_gate']['minimum_distinct_snapshot_months']>=36
 assert promo['score_weight_challenger']['requires_versioned_human_review'] is True
 assert promo['governance']['no_automatic_trading'] is True
 
-print('DECISION SCIENCE V2 PASS')
+print('DECISION SCIENCE V2 / VALIDATION OS V1.3 PASS')
