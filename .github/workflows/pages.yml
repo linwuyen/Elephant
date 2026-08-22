@@ -48,6 +48,7 @@ jobs:
         run: |
           node --check app.js
           node --check investment.js
+          node --check investment_v6_patch.js
           node --check personal_capital.js
           node --check research.js
           node --check decision.js
@@ -92,6 +93,7 @@ jobs:
           python scripts/test_ndc_zip_selection.py
           python scripts/test_twse_market_live.py
           python scripts/validate_intelligence_layer.py
+          python scripts/test_source_alpha_v6.py
           python scripts/validate_investment.py
           python scripts/test_investment_integration.py
           python scripts/build_vintage.py --validate
@@ -147,6 +149,7 @@ jobs:
         run: |
           python scripts/refresh_investment.py
           python scripts/refresh_capital.py
+          python scripts/test_source_alpha_v6.py
           python scripts/validate_investment.py
           python scripts/validate_capital_allocation.py
           python scripts/test_capital_allocation.py

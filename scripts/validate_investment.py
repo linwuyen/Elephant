@@ -24,15 +24,29 @@ def finite_or_none(value):
     return value is None or (isinstance(value, (int, float)) and math.isfinite(value))
 
 
+def canonical_valuation(asset):
+    metrics = asset.get("valuation_metrics") or {}
+    model = asset.get("valuation_model") or {}
+    expected = metrics.get("expected_return_pct")
+    if expected is None:
+        expected = model.get("expected_return_pct")
+    base_upside = metrics.get("base_upside_pct")
+    if base_upside is None:
+        base_upside = model.get("base_upside_pct")
+    return expected, base_upside
+
+
 investment = load("investment.json")
 upstream = load("alpha_engine.json")
 alpha = upstream.get("alpha", {})
 screen = upstream.get("screen", {})
 
-if investment.get("version") != 1:
+if investment.get("version") != 2:
     fail("unsupported investment version")
 if investment.get("status") not in {"COMPLETE", "DEGRADED"}:
     fail("invalid investment status")
+if investment.get("architecture", {}).get("alpha_schema") != 6:
+    fail("investment did not record stock Alpha schema v6")
 
 guards = investment.get("guardrails", {})
 required_true = {
@@ -40,6 +54,7 @@ required_true = {
     "macro_context_cannot_create_buy_candidate",
     "screen_is_not_buy_gate",
     "stock_buy_gate_authoritative",
+    "stock_base_upside_semantics_preserved",
     "no_automatic_trading",
 }
 if any(guards.get(key) is not True for key in required_true):
@@ -68,6 +83,13 @@ for row in researched:
         fail(f"macro layer changed Alpha action for {ticker}")
     if row.get("confidence_score") != source.get("confidence_score"):
         fail(f"macro layer changed confidence for {ticker}")
+    expected_return, base_upside = canonical_valuation(source)
+    if row.get("expected_return_pct") != expected_return:
+        fail(f"expected return diverged from Alpha Engine for {ticker}")
+    if row.get("base_upside_pct") != base_upside:
+        fail(f"base upside diverged from Alpha Engine for {ticker}")
+    if "margin_of_safety_pct" in row:
+        fail(f"legacy MOS field republished for {ticker}")
     if row.get("macro_context_changes_alpha_score") is not False:
         fail(f"macro/alpha separation flag invalid for {ticker}")
 
@@ -92,8 +114,13 @@ benchmark = investment.get("benchmark", {})
 source_benchmark = alpha.get("benchmark_asset", {})
 if benchmark.get("ticker") != source_benchmark.get("ticker"):
     fail("benchmark ticker mismatch")
-if benchmark.get("expected_return_pct") != source_benchmark.get("valuation_model", {}).get("expected_return_pct"):
+benchmark_expected, benchmark_base_upside = canonical_valuation(source_benchmark)
+if benchmark.get("expected_return_pct") != benchmark_expected:
     fail("benchmark expected return mismatch")
+if benchmark.get("base_upside_pct") != benchmark_base_upside:
+    fail("benchmark base upside mismatch")
+if "margin_of_safety_pct" in benchmark:
+    fail("legacy benchmark MOS field republished")
 
 freshness = investment.get("freshness", {})
 for key in ("alpha_research_age_days", "screen_age_days"):
