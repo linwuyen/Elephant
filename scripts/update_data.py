@@ -16,10 +16,11 @@ import build_investment
 import build_vintage
 import build_data_quality_slo
 import build_point_in_time_validation
+import build_validation_targets
 import build_decision_engine
 import build_decision_engine_v2
 import build_risk_budget_v2_availability
-import build_validation_os_v1_2
+import build_validation_os_v1_3
 import build_decision_attribution
 import build_statistical_challengers
 import build_decision_command
@@ -96,7 +97,7 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 21,
+        'pipeline_version': 22,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
@@ -119,7 +120,6 @@ def main():
     save_json('status.json', status)
     coverage(status)
     revision_tracker.record(before, now)
-    build_data_quality_slo.build()
     save_json('data_quality_slo.json', build_data_quality_slo.build())
 
     build_vintage.capture(now)
@@ -127,6 +127,8 @@ def main():
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
+    build_validation_targets.main if False else None
+    save_json('validation_targets.json', build_validation_targets.build())
     build_ai_concentration.generate()
     build_model_validation.generate()
     build_structural_layers.generate()
@@ -137,7 +139,7 @@ def main():
     build_risk_budget_v2_availability.generate()
     save_json('decision_attribution.json', build_decision_attribution.build())
     save_json('statistical_challengers.json', build_statistical_challengers.build())
-    build_validation_os_v1_2.generate(append_journal=True)
+    build_validation_os_v1_3.generate(append_journal=True)
     build_decision_command.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
