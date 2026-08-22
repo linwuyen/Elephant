@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "contract": "independent-economic-validation-targets-v1",
+  "registered_at": "2026-08-23",
+  "supersedes": "Validation OS v1.2 future-same-dimension-score target",
+  "supersession_reason": "Future production-weighted score is circular when comparing production weights against alternative weights. No model promotion occurred under v1.2. v1.3 uses fixed downstream outcome subsets that do not contain the production or challenger aggregate weights.",
+  "authority": "GOVERNANCE_ONLY",
+  "automatic_promotion": false,
+  "targets": {
+    "growth_persistence": {
+      "id": "future_realized_manufacturing_activity",
+      "components": ["production", "sales"],
+      "aggregation": "equal_mean_of_fixed_component_transforms",
+      "minimum_components": 2,
+      "meaning": "Future realized manufacturing production and sales, excluding upstream orders/exports and inventory-balance predictors."
+    },
+    "domestic_demand": {
+      "id": "future_realized_domestic_activity",
+      "components": ["employment", "retail", "food", "card_spending"],
+      "aggregation": "equal_mean_of_fixed_component_transforms",
+      "minimum_components": 3,
+      "meaning": "Future realized employment and consumption activity; real wage is excluded from the target and remains a predictor."
+    },
+    "financial_conditions": {
+      "id": "future_realized_financing_support",
+      "components": ["credit", "interest_rate"],
+      "aggregation": "equal_mean_of_fixed_component_transforms",
+      "minimum_components": 2,
+      "meaning": "Future realized bank-credit support and short-rate direction; M1B/M2 remain leading liquidity predictors and FX remains diagnostic-only."
+    },
+    "cycle": {
+      "id": "future_cycle_score",
+      "meaning": "Future aggregate macro regime; Cycle is the owner of this target."
+    },
+    "ai_concentration": {
+      "id": "future_concentration_state",
+      "meaning": "Future concentration state; no production-weight challenger is currently eligible."
+    }
+  },
+  "guardrails": [
+    "Targets are fixed before any challenger promotion decision.",
+    "Target aggregates never use production or equal-weight challenger aggregate weights.",
+    "Latest-revised history is diagnostic only; promotion still requires true point-in-time vintages.",
+    "Changing target components, transforms, horizon or minimum coverage requires a new target-contract version."
+  ]
+}
