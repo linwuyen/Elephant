@@ -94,9 +94,9 @@
   migrate();
   window.ElephantPortfolioState={KEY,schemaVersion:3,migrationKeys:[...MIGRATION_KEYS],load,save,clear,normalize,parseHoldings};
 
-  // Browser-local stress layer shares the canonical state but never persists
-  // private portfolio information anywhere except the existing localStorage key.
-  if(!document.querySelector('script[data-elephant-portfolio-risk]')){
+  // The stress layer is browser-only. State semantics remain executable in the
+  // deterministic Node VM tests, where no DOM exists.
+  if(typeof document!=='undefined' && document.body && typeof document.querySelector==='function' && typeof document.createElement==='function' && !document.querySelector('script[data-elephant-portfolio-risk]')){
     const s=document.createElement('script');s.src='portfolio_risk.js';s.defer=true;s.dataset.elephantPortfolioRisk='1';document.body.appendChild(s);
   }
 })();
