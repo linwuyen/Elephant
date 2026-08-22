@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "contract": "capital-opportunity-frontier-v1",
+  "authority": false,
+  "status": "PARTIAL_RISK_DATA",
+  "comparison_basis": "ANNUALIZED_NOMINAL_PRE_TAX_AFTER_PUBLIC_FRICTION",
+  "dimensions": {
+    "return": "annualized_expected_return_pct",
+    "tail_risk": "expected_shortfall_pct",
+    "liquidity": "evidence-only-until-standardized"
+  },
+  "assets": [
+    {
+      "id": "2330",
+      "name": "台積電",
+      "type": "equity_benchmark",
+      "source": "ALPHA_ENGINE",
+      "annualized_expected_return_pct": 26.96,
+      "expected_shortfall_pct": null,
+      "probability_loss_gt_20_pct": null,
+      "liquidity_evidence": null,
+      "risk_complete": false
+    },
+    {
+      "id": "TAIWAN_BROAD",
+      "name": "台灣大盤替代資產（0050 proxy）",
+      "type": "equity_benchmark",
+      "source": "FIRST_PARTY_ISSUER+MODEL",
+      "annualized_expected_return_pct": 6.22,
+      "expected_shortfall_pct": null,
+      "probability_loss_gt_20_pct": null,
+      "liquidity_evidence": null,
+      "risk_complete": false
+    },
+    {
+      "id": "GLOBAL_EQUITY",
+      "name": "全球股票替代資產（VT proxy）",
+      "type": "equity_benchmark",
+      "source": "FIRST_PARTY_ISSUER+MODEL",
+      "annualized_expected_return_pct": 7.29,
+      "expected_shortfall_pct": null,
+      "probability_loss_gt_20_pct": null,
+      "liquidity_evidence": null,
+      "risk_complete": false
+    },
+    {
+      "id": "CASH",
+      "name": "現金／短期無風險替代（CBC policy-rate proxy）",
+      "type": "cash",
+      "source": "CBC_FIRST_PARTY",
+      "annualized_expected_return_pct": 2.0,
+      "expected_shortfall_pct": null,
+      "probability_loss_gt_20_pct": null,
+      "liquidity_evidence": null,
+      "risk_complete": false
+    },
+    {
+      "id": "2376",
+      "name": "技嘉",
+      "type": "researched_security",
+      "source": "ALPHA_ENGINE+CAPITAL_OS",
+      "annualized_expected_return_pct": 35.26,
+      "expected_shortfall_pct": -17.07,
+      "probability_loss_gt_20_pct": 0.0,
+      "liquidity_evidence": null,
+      "risk_complete": true,
+      "upstream_action": "VERIFY",
+      "constitution_status": "PASS",
+      "capital_action": "RESEARCH",
+      "capital_eligible": false
+    },
+    {
+      "id": "2382",
+      "name": "廣達",
+      "type": "researched_security",
+      "source": "ALPHA_ENGINE+CAPITAL_OS",
+      "annualized_expected_return_pct": 12.69,
+      "expected_shortfall_pct": -23.32,
+      "probability_loss_gt_20_pct": 25.0,
+      "liquidity_evidence": null,
+      "risk_complete": true,
+      "upstream_action": "VERIFY",
+      "constitution_status": "BLOCKED",
+      "capital_action": "RESEARCH",
+      "capital_eligible": false
+    },
+    {
+      "id": "2301",
+      "name": "光寶科",
+      "type": "researched_security",
+      "source": "ALPHA_ENGINE+CAPITAL_OS",
+      "annualized_expected_return_pct": 15.19,
+      "expected_shortfall_pct": -18.37,
+      "probability_loss_gt_20_pct": 0.0,
+      "liquidity_evidence": null,
+      "risk_complete": true,
+      "upstream_action": "VERIFY",
+      "constitution_status": "FAIL",
+      "capital_action": "RESEARCH",
+      "capital_eligible": false
+    },
+    {
+      "id": "2451",
+      "name": "創見",
+      "type": "researched_security",
+      "source": "ALPHA_ENGINE+CAPITAL_OS",
+      "annualized_expected_return_pct": 1.18,
+      "expected_shortfall_pct": -15.26,
+      "probability_loss_gt_20_pct": 25.0,
+      "liquidity_evidence": null,
+      "risk_complete": true,
+      "upstream_action": "VERIFY",
+      "constitution_status": "FAIL",
+      "capital_action": "RESEARCH",
+      "capital_eligible": false
+    },
+    {
+      "id": "3515",
+      "name": "華擎",
+      "type": "researched_security",
+      "source": "ALPHA_ENGINE+CAPITAL_OS",
+      "annualized_expected_return_pct": 15.38,
+      "expected_shortfall_pct": -33.05,
+      "probability_loss_gt_20_pct": 25.0,
+      "liquidity_evidence": null,
+      "risk_complete": true,
+      "upstream_action": "VERIFY",
+      "constitution_status": "BLOCKED",
+      "capital_action": "RESEARCH",
+      "capital_eligible": false
+    }
+  ],
+  "comparable_asset_count": 5,
+  "non_dominated_ids": [
+    "2376",
+    "2451"
+  ],
+  "missing_standardized_risk_ids": [
+    "2330",
+    "TAIWAN_BROAD",
+    "GLOBAL_EQUITY",
+    "CASH"
+  ],
+  "current_hurdle_unchanged": true,
+  "guardrail": "Frontier is diagnostic until public risk/liquidity evidence is standardized across alternatives. It cannot override upstream action, Constitution, sizing, or the production hurdle."
+}
