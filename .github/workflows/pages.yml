@@ -66,6 +66,7 @@ jobs:
       - name: Rebuild derived decision intelligence in validation workspace
         run: |
           python scripts/build_decision_scores.py
+          python scripts/build_validation_targets.py
           python scripts/build_ai_concentration.py
           python scripts/build_model_validation.py
           python scripts/build_structural_layers.py
@@ -84,11 +85,12 @@ jobs:
           python scripts/build_risk_budget_v2_availability.py
           python scripts/build_decision_attribution.py
           python scripts/build_statistical_challengers.py
-          python scripts/build_validation_os_v1_2.py --no-journal
+          python scripts/build_validation_os_v1_3.py --no-journal
           python scripts/build_decision_command.py
           python scripts/build_model_governance.py
       - name: Validate published contracts
         run: |
+          python scripts/build_validation_targets.py --check
           python scripts/validate_data.py
           python scripts/test_decision_score_math.py
           node scripts/test_portfolio_state.js
@@ -156,12 +158,14 @@ jobs:
       - name: Build derived intelligence for Pages artifact
         run: |
           python scripts/build_decision_scores.py
+          python scripts/build_validation_targets.py
           python scripts/build_ai_concentration.py
           python scripts/build_model_validation.py
           python scripts/build_structural_layers.py
           python scripts/build_intelligence_layer.py
           python scripts/build_data_quality_slo.py
           python scripts/build_point_in_time_validation.py
+          python scripts/build_validation_targets.py --check
           python scripts/test_decision_score_math.py
           python scripts/validate_decision_scores.py
           python scripts/validate_model_validation.py
@@ -192,7 +196,7 @@ jobs:
           python scripts/build_risk_budget_v2_availability.py
           python scripts/build_decision_attribution.py
           python scripts/build_statistical_challengers.py
-          python scripts/build_validation_os_v1_2.py --no-journal
+          python scripts/build_validation_os_v1_3.py --no-journal
           python scripts/build_decision_command.py
           python scripts/build_model_governance.py
           python scripts/build_vintage.py --validate
