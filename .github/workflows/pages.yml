@@ -53,6 +53,7 @@ jobs:
           node --check research.js
           node --check decision.js
           node --check portfolio_state.js
+          node --check portfolio_risk.js
           node --check intelligence.js
           node --check decision_engine.js
           node --check decision_validation.js
@@ -60,6 +61,7 @@ jobs:
           node --check command_center.js
           node --check scripts/test_portfolio_state_browser.js
           node --check scripts/test_portfolio_consumers.js
+          node --check scripts/test_portfolio_risk.js
           python -m py_compile scripts/*.py
       - name: Rebuild derived decision intelligence in validation workspace
         run: |
@@ -68,16 +70,21 @@ jobs:
           python scripts/build_model_validation.py
           python scripts/build_structural_layers.py
           python scripts/build_intelligence_layer.py
+          python scripts/build_data_quality_slo.py
+          python scripts/build_point_in_time_validation.py
       - name: Refresh Alpha integration and Capital OS in validation workspace
         run: |
           python scripts/refresh_investment.py
           python scripts/refresh_capital.py
+          python scripts/build_opportunity_frontier.py
       - name: Rebuild Decision Engines without mutating journal
         run: |
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
           python scripts/build_risk_budget_v2_availability.py
-          python scripts/build_validation_os_v1_1.py --no-journal
+          python scripts/build_decision_attribution.py
+          python scripts/build_statistical_challengers.py
+          python scripts/build_validation_os_v1_2.py --no-journal
           python scripts/build_decision_command.py
           python scripts/build_model_governance.py
       - name: Validate published contracts
@@ -86,6 +93,7 @@ jobs:
           python scripts/test_decision_score_math.py
           node scripts/test_portfolio_state.js
           node scripts/test_portfolio_consumers.js
+          node scripts/test_portfolio_risk.js
           python scripts/validate_decision_scores.py
           python scripts/validate_model_validation.py
           python scripts/validate_structural_layers.py
@@ -110,6 +118,7 @@ jobs:
           python scripts/test_risk_budget_v2_availability.py
           python scripts/validate_validation_os.py
           python scripts/test_validation_os.py
+          python scripts/validate_decision_science_v2.py
           python scripts/validate_decision_command.py
           python scripts/test_decision_command.py
           python scripts/validate_capital_allocation.py
@@ -151,6 +160,8 @@ jobs:
           python scripts/build_model_validation.py
           python scripts/build_structural_layers.py
           python scripts/build_intelligence_layer.py
+          python scripts/build_data_quality_slo.py
+          python scripts/build_point_in_time_validation.py
           python scripts/test_decision_score_math.py
           python scripts/validate_decision_scores.py
           python scripts/validate_model_validation.py
@@ -168,6 +179,7 @@ jobs:
         run: |
           python scripts/refresh_investment.py
           python scripts/refresh_capital.py
+          python scripts/build_opportunity_frontier.py
           python scripts/test_source_alpha_v6.py
           python scripts/validate_investment.py
           python scripts/validate_capital_allocation.py
@@ -178,7 +190,9 @@ jobs:
           python scripts/build_decision_engine.py --no-journal
           python scripts/build_decision_engine_v2.py
           python scripts/build_risk_budget_v2_availability.py
-          python scripts/build_validation_os_v1_1.py --no-journal
+          python scripts/build_decision_attribution.py
+          python scripts/build_statistical_challengers.py
+          python scripts/build_validation_os_v1_2.py --no-journal
           python scripts/build_decision_command.py
           python scripts/build_model_governance.py
           python scripts/build_vintage.py --validate
@@ -190,8 +204,10 @@ jobs:
           python scripts/test_risk_budget_v2_availability.py
           python scripts/validate_validation_os.py
           python scripts/test_validation_os.py
+          python scripts/validate_decision_science_v2.py
           python scripts/validate_decision_command.py
           python scripts/test_decision_command.py
+          node scripts/test_portfolio_risk.js
       - name: Configure Pages
         uses: actions/configure-pages@v6
       - name: Upload Pages artifact

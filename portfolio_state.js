@@ -61,9 +61,6 @@
       return current;
     }
 
-    // v2 was the previous canonical source and therefore wins over stale legacy
-    // aliases if it exists. Only browsers without v2 fall back to the old v1 +
-    // Personal Capital v3 pair, where detailed holdings/debt semantics win.
     const previousCanonical=parseJson(storage.getItem('elephant.portfolio.v2'));
     if(Object.keys(previousCanonical).length)return persist(previousCanonical);
 
@@ -96,4 +93,10 @@
 
   migrate();
   window.ElephantPortfolioState={KEY,schemaVersion:3,migrationKeys:[...MIGRATION_KEYS],load,save,clear,normalize,parseHoldings};
+
+  // The stress layer is browser-only. State semantics remain executable in the
+  // deterministic Node VM tests, where no DOM exists.
+  if(typeof document!=='undefined' && document.body && typeof document.querySelector==='function' && typeof document.createElement==='function' && !document.querySelector('script[data-elephant-portfolio-risk]')){
+    const s=document.createElement('script');s.src='portfolio_risk.js';s.defer=true;s.dataset.elephantPortfolioRisk='1';document.body.appendChild(s);
+  }
 })();

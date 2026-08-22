@@ -14,10 +14,14 @@ import build_structural_layers
 import build_intelligence_layer
 import build_investment
 import build_vintage
+import build_data_quality_slo
+import build_point_in_time_validation
 import build_decision_engine
 import build_decision_engine_v2
 import build_risk_budget_v2_availability
-import build_validation_os_v1_1
+import build_validation_os_v1_2
+import build_decision_attribution
+import build_statistical_challengers
 import build_decision_command
 import revision_tracker
 import source_macro
@@ -92,15 +96,12 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 20,
+        'pipeline_version': 21,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
-    # Canonical manufacturing-total sales/inventory must come from the official
-    # current-statistics tables, where C is explicitly published. The data.gov
-    # datasets 95141/109753 are I1-I4 segment datasets and must never overwrite C.
     source_moea.live_sales_index = source_moea_live_tables.live_sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
@@ -111,8 +112,6 @@ def main():
     refresh_source(status, bad, 'decision_supplements', source_supplements.update, a.offline_dir, False)
     refresh_source(status, bad, 'inventory_manufacturing', source_moea_live_tables.update_inventory, a.offline_dir, False)
     refresh_source(status, bad, 'alpha_engine', source_alpha.update, a.offline_dir, False)
-    # SEGIS is an official structural-context source. Failure preserves last-good
-    # data but never blocks or changes deterministic macro/security authority.
     refresh_source(status, bad, 'segis', source_segis.update, a.offline_dir, False)
     status['critical_failures'] = bad
     if not bad:
@@ -120,8 +119,11 @@ def main():
     save_json('status.json', status)
     coverage(status)
     revision_tracker.record(before, now)
+    build_data_quality_slo.build()
+    save_json('data_quality_slo.json', build_data_quality_slo.build())
 
     build_vintage.capture(now)
+    save_json('point_in_time_validation.json', build_point_in_time_validation.build())
     build_summary.generate()
     build_history.generate()
     build_decision_scores.generate()
@@ -133,11 +135,9 @@ def main():
     build_decision_engine.generate(append_journal=True)
     build_decision_engine_v2.generate()
     build_risk_budget_v2_availability.generate()
-    # Validation OS v1.1 compares Score champion/challenger only on paired common
-    # months and identical future outcomes. Evidence remains downstream-only.
-    build_validation_os_v1_1.generate(append_journal=True)
-    # Command Center is the final presentation/policy compiler. It creates no new
-    # authority and only translates already-published Macro/Risk/Alpha/Validation evidence.
+    save_json('decision_attribution.json', build_decision_attribution.build())
+    save_json('statistical_challengers.json', build_statistical_challengers.build())
+    build_validation_os_v1_2.generate(append_journal=True)
     build_decision_command.generate()
     print(json.dumps(status, ensure_ascii=False, indent=2))
 

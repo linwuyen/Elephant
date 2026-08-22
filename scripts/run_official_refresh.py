@@ -3,11 +3,12 @@ from __future__ import annotations
 import subprocess,sys
 
 COMMANDS=[
- ['python','-m','py_compile','scripts/common.py','scripts/update_data.py','scripts/source_segis.py','scripts/source_opportunity.py','scripts/source_security_facts.py','scripts/source_moea_dataset.py','scripts/source_twse_market_live.py','scripts/refresh_capital.py','scripts/capital_allocation.py','scripts/build_shadow_book.py','scripts/build_security_calibration.py','scripts/build_capital_decision_journal.py','scripts/build_opportunity_models.py','scripts/build_risk_budget_v2.py','scripts/build_risk_budget_v2_availability.py','scripts/build_validation_os.py','scripts/build_validation_os_v1_1.py','scripts/build_decision_command.py'],
+ ['python','-m','py_compile','scripts/common.py','scripts/update_data.py','scripts/source_segis.py','scripts/source_opportunity.py','scripts/source_security_facts.py','scripts/source_moea_dataset.py','scripts/source_twse_market_live.py','scripts/refresh_capital.py','scripts/capital_allocation.py','scripts/build_shadow_book.py','scripts/build_security_calibration.py','scripts/build_capital_decision_journal.py','scripts/build_opportunity_models.py','scripts/build_risk_budget_v2.py','scripts/build_risk_budget_v2_availability.py','scripts/build_validation_os.py','scripts/build_validation_os_v1_2.py','scripts/build_data_quality_slo.py','scripts/build_point_in_time_validation.py','scripts/build_decision_attribution.py','scripts/build_opportunity_frontier.py','scripts/build_statistical_challengers.py','scripts/build_decision_command.py','scripts/validate_decision_science_v2.py'],
  ['python','scripts/update_data.py'],
  ['python','scripts/source_opportunity.py'],
  ['python','scripts/source_security_facts.py'],
  ['python','scripts/refresh_capital.py'],
+ ['python','scripts/build_opportunity_frontier.py'],
  ['python','scripts/validate_data.py'],
  ['python','scripts/validate_decision_scores.py'],
  ['python','scripts/validate_model_validation.py'],
@@ -31,6 +32,8 @@ COMMANDS=[
  ['python','scripts/test_risk_budget_v2_availability.py'],
  ['python','scripts/validate_validation_os.py'],
  ['python','scripts/test_validation_os.py'],
+ ['python','scripts/validate_decision_science_v2.py'],
+ ['node','scripts/test_portfolio_risk.js'],
  ['python','scripts/validate_decision_command.py'],
  ['python','scripts/test_decision_command.py'],
  ['python','scripts/validate_capital_allocation.py'],

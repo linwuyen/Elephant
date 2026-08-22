@@ -2,12 +2,18 @@
 
 ## First-principles objective
 
-The three repositories answer three different questions and must remain directionally coupled but authority-separated:
+The system exists to reduce expected decision error under incomplete information, not to maximize dashboard features.
+
+```text
+Information → Belief → Decision → Outcome → Learning
+```
+
+The three repositories remain authority-separated:
 
 ```text
 Consultant_System: What external research context exists, and is its provenance healthy?
 stock:             Does this security deserve BUY CANDIDATE status on its own evidence?
-Elephant:          Given macro, liquidity, debt, concentration and portfolio risk, what capital action is reviewable?
+Elephant:          Given macro, evidence quality, portfolio risk and opportunity cost, what capital action is reviewable?
 ```
 
 No repository is allowed to answer the next repository's question by shortcut.
@@ -25,14 +31,17 @@ Consultant_System
 TWSE / TPEx → stock → Alpha schema v6 ─→ Elephant
               Security Buy Gate         │
               BUY/VERIFY/WATCH/AVOID     │
-              prospective calibration   │
+              total-return calibration  │
+              scenario calibration      │
+              research VOI              │
                                         ↓
 Official Taiwan macro data ─────────→ Elephant
 SEGIS structural context ────────────→ Elephant
                                         ↓
-                         Macro regime / risk envelope
-                         Capital Allocation OS
-                         Browser-local personal portfolio
+                         Macro regime / evidence confidence
+                         Validation OS / PIT learning
+                         Capital Allocation OS / frontier
+                         Browser-local personal portfolio stress
                          REVIEW plan only; no trading
 ```
 
@@ -44,13 +53,16 @@ There is intentionally no direct Consultant_System → stock scoring path. Exter
 | --- | --- | --- | --- |
 | Research discovery / provenance health | Consultant_System | Public publisher discovery surfaces | Economic score, security action |
 | Security research / valuation / Alpha | stock | Official market data + security-specific first-party evidence | Portfolio sizing, leverage, automatic trading |
-| Security BUY / VERIFY / WATCH / AVOID | stock | Deterministic Security Buy Gate | Be overridden by macro optimism |
-| Security realized/probability calibration evidence | stock | Point-in-time forecasts + future market outcomes | Retroactively rewrite historical priors or bypass Buy Gate |
+| Security BUY / VERIFY / WATCH / AVOID | stock | Deterministic Security Buy Gate | Be overridden by macro optimism or VOI |
+| Security realized/probability calibration evidence | stock | Point-in-time forecasts + future market/corporate-action outcomes | Retroactively rewrite history or bypass Buy Gate |
+| Security research scheduling | stock | Gate proximity + evidence gap + model uncertainty | Become a probability, score, Buy Gate, or sizing input |
 | Macro diagnosis | Elephant | Official economic data | Be changed by consultant narrative |
+| Data-quality confidence | Elephant | Provenance/fallback/last-good state | Change deterministic macro/security Scores directly |
 | Structural geographic context | Elephant | Validated official SEGIS public machine data | Change deterministic macro/security scores |
 | Research Evidence / Contradictions / Risks | Elephant consuming Consultant_System | Validated consultant snapshot | Change deterministic score |
-| Cash / debt / leverage / concentration / sizing | Elephant | Public model artifacts + browser-local user inputs | Write private portfolio state to GitHub |
-| Model challenger review | Elephant | Point-in-time/common-sample validation evidence | Auto-promote a challenger without sample gates/version change |
+| Cash / debt / leverage / concentration / stress | Elephant | Public model artifacts + browser-local user inputs | Write private portfolio state to GitHub |
+| Capital opportunity frontier | Elephant | Comparable expected-return/tail-risk evidence | Override Alpha, Constitution, sizing or production hurdle |
+| Model challenger review | Elephant | Revised-history diagnostics + true point-in-time evidence | Auto-promote a challenger without gates/version change |
 | Execution | None | Review output only | Place orders automatically |
 
 ## Integration invariants
@@ -71,155 +83,180 @@ A failed sync keeps the last-good Elephant snapshot.
 
 ### stock → Elephant
 
-The canonical security artifact is stock Alpha schema v6 (`security-v6.0.0`). Elephant must verify before accepting it:
+The canonical security artifact remains stock Alpha schema v6 (`security-v6.0.0`). Elephant additionally consumes the decision-science evidence contract and must verify:
 
 - Alpha schema version 6 and supported decision-engine version;
 - canonical `base_upside_pct` / `min_base_upside_pct` / `buy_gate.base_upside` names;
-- researched security score and confidence ranges;
 - canonical action enum only;
 - Screen is fail-closed and explicitly not a Buy Gate;
-- discovery candidates carry no portfolio action;
-- market-complete promotion contract is satisfied;
-- performance calibration uses the BUY_CANDIDATE primary cohort;
-- prospective Bear/Base/Bull calibration preserves a minimum resolved-sample guardrail.
+- total-return performance schema v3 uses `BUY_CANDIDATE` as the primary cohort;
+- total return uses the prospective TWSE `TWT48U_ALL` corporate-action ledger;
+- intervals before corporate-action coverage or with unsupported actions remain unresolved rather than approximated;
+- price return is diagnostic only and cannot satisfy the total-return promotion gate;
+- prospective Bear/Base/Bull calibration keeps its ≥30 resolved-sample guardrail;
+- research VOI is `authority=false`, `score_influence=false`, `buy_gate_influence=false`;
+- the preregistered stock model-promotion contract cannot auto-promote and cannot change without a version bump.
 
-Elephant may attach macro context and portfolio constraints, but must preserve the upstream stock action as security authority. Elephant republishes the quantity as `base_upside_pct`; it does not reintroduce the legacy MOS name.
+Elephant may attach macro context and portfolio constraints, but must preserve the upstream stock action as security authority.
 
 ### SEGIS → Elephant
 
-SEGIS is an official **structural-context** source, not a deterministic-score input. The current canonical product is `114年12月行政區工商家數_鄉鎮市區`.
+SEGIS is an official structural-context source, not a deterministic-score input. The canonical product is `114年12月行政區工商家數_鄉鎮市區`.
 
-Elephant accepts a refresh only when:
+Elephant accepts a refresh only when the official product remains public/no-application-required, exposes its machine JSON service, passes complete schema/row-count/ID/value/period checks, and produces one coherent official snapshot. Failed refreshes preserve last-good data and never grant score authority.
 
-- the official product page still declares the exact product public and no-application-required;
-- the page itself advertises and exposes the JSON machine service URL;
-- `Info`, `ColumnList` and `RowDataList` are present and machine-decodable;
-- declared `OutTotal` equals the actual row count;
-- `INFO_TIME`, county/town IDs and names, and `C_CNT` are present;
-- township IDs are unique;
-- counts are finite and non-negative;
-- the snapshot contains one coherent official period.
+## Point-in-time evidence contract
 
-The normalized artifact is `data/segis.json`. Administrative coverage follows the official product; missing geography is never imputed. SEGIS remains non-critical to deterministic macro scoring, and a failed refresh preserves last-good data.
+`data/vintages.db` is the canonical prospective economic vintage store. It records what was actually observed and when.
 
-## Visualization contract
-
-Every dynamic visualization must answer one question and expose the scale needed to read it correctly.
-
-1. **Observed values are connected with straight segments.** No spline smoothing is used for monthly / quarterly official observations because curvature between observations is not measured data.
-2. **Units are visible on the Y axis.** A tooltip or table-only unit is insufficient.
-3. **Reference lines are semantic, not decorative.** Examples: 0% for signed growth rates, 50 for PMI/NMI, 0 for Elephant -100…+100 direction scores, 60/75 for AI Concentration labels.
-4. **Dual-axis charts carry an explicit warning.** They may show timing relationships but must not invite direct slope or height comparison across different units.
-5. **Index level is not growth.** Base-year 100 is labeled as the reference level and must not be read as a normal/neutral economic threshold.
-6. **Score is not probability.** Alpha Score, Confidence, Expected Return, Cycle Score and AI Concentration are different quantities and must never share ambiguous language.
-7. **Historical reconstruction is labeled.** Revised-series reconstruction is not presented as point-in-time forecast performance.
-
-## UI information hierarchy
-
-The user should be able to move from action to evidence without mixing authority:
+For every point-in-time replay:
 
 ```text
-1. What changed / what action is reviewable?
-2. Why? Macro + security authority + portfolio constraints
-3. What evidence supports or contradicts it?
-4. How reliable is the model / sample?
-5. Raw data, provenance, SQL and operational health
+value(as_of) = latest observation where observed_at <= as_of
 ```
 
-The overview should not duplicate every downstream tool. Detailed model validation, research SQL and raw coverage belong in dedicated tabs or expandable evidence surfaces.
+Rules:
 
-## Model semantics and validation state
+- a later official revision can never leak into an earlier simulated `as_of`;
+- SQLite integrity and the look-ahead guardrail must pass;
+- observations before vintage collection began remain latest-revised historical reconstructions;
+- reconstructed history may screen challengers but can never promote a production model;
+- model promotion requires at least 36 distinct true point-in-time snapshot months and separately preregistered evidence gates;
+- no historical value is manufactured merely to increase sample size.
 
-These are explicit model contracts. “Implementation complete” does not mean “empirically proven.” Evidence-dependent promotion remains fail-closed until future samples mature.
+## Validation OS v1.2 target contract
 
-### Elephant deterministic macro Scores
+A model should be tested against the outcome it claims to measure, not against one universal target.
 
-- Score weights and transforms are deterministic, inspectable production heuristics.
-- Domestic Demand real-growth components use exact multiplicative deflation: `(1 + nominal YoY)/(1 + CPI YoY) - 1`; CPI missing means the real component is missing.
-- USD/TWD is diagnostic-only in Financial Conditions with deterministic weight zero because its economic direction is not monotonic.
-- Validation OS v1.1 compares production weights against a predeclared equal-weight challenger on identical common score months and identical future Cycle outcomes at 3M/6M.
-- A winner cannot be declared below 36 common observations at both horizons. Challenger promotion is never automatic and requires a versioned model decision.
+| Dimension | Primary future validation target | Secondary diagnostic |
+| --- | --- | --- |
+| Cycle | future aggregate Cycle regime | — |
+| Growth Persistence | future growth-persistence composite | future Cycle |
+| Domestic Demand | future domestic-demand composite | future Cycle |
+| Financial Conditions | future financial-conditions composite | future Cycle |
+| AI Concentration | future concentration persistence | — |
 
-Therefore the challenger **infrastructure is implemented**; statistical evidence remains prospective/ongoing by nature.
+Production vs equal-weight challengers are compared on identical common periods and identical dimension-appropriate future outcomes at 3M/6M. A minimum of 36 common observations is required for review, but revised-history evidence alone still cannot promote a model. Promotion is never automatic.
 
-### stock Alpha schema v6
+## Data Quality SLO
 
-The legacy MOS-named field has been migrated without changing economics:
+A pipeline being green does not imply identical evidence quality. Elephant classifies source integrity separately:
+
+```text
+A  direct verified production source, no active degradation
+B  first-party equivalent recovery/fallback or mixed direct + last-good package
+C  explicit degraded / last-good state
+D  unknown or stale quality requiring review
+F  blocked, failed, or semantic mismatch
+```
+
+The SLO may reduce evidence/data confidence. It **must not** change deterministic macro/security Scores directly. TLS verification is never disabled to manufacture an A-grade source.
+
+## Decision attribution
+
+The system reports only causal statements it can support.
+
+Current attribution can exactly report:
+
+- Score deltas;
+- risk-budget/posture deltas;
+- Alpha action changes;
+- official revision events between decision snapshots;
+- contemporaneous non-A source-quality states.
+
+It does **not** invent per-component percentage-point causal attribution from correlated snapshot changes. One-factor counterfactual attribution becomes eligible only when sufficient true point-in-time vintages exist.
+
+## stock learning loop
+
+### Base-upside semantics
 
 ```text
 base_upside_pct = base_fair_value / reference_price - 1
 ```
 
-The schema is now:
+The legacy MOS-named field was migrated without changing economics and is not classical margin of safety.
 
-```text
-margin_of_safety_pct       → base_upside_pct
-min_margin_of_safety_pct   → min_base_upside_pct
-buy_gate.margin_of_safety  → buy_gate.base_upside
-```
+### Realized-return calibration
 
-This migration does not implement classical margin of safety `(fair_value - price) / fair_value` and does not retune the Buy Gate.
+- primary cohort: actual `BUY_CANDIDATE` entry transitions;
+- horizons: 1/4/13/26/52 weeks;
+- eligible outcome: cash-distribution-inclusive total return minus TSMC total return;
+- TWSE corporate actions are captured prospectively;
+- periods before action-ledger coverage remain unresolved;
+- minimum sample gate remains ≥30;
+- `INSUFFICIENT_HISTORY` is a correct production state.
 
-### Alpha realized-return calibration
+### Research Value of Information
 
-- Primary cohort: actual `BUY_CANDIDATE` entry transitions.
-- Outcomes: forward stock price return minus TSMC price return at 1/4/13/26/52 weeks.
-- Minimum sample requirement remains fail-closed.
-- `INSUFFICIENT_HISTORY` is a correct production state and must not be relabeled as predictive skill.
-
-The calibration **pipeline is implemented**; evidence cannot be manufactured before sufficient future observations exist.
+VOI is a deterministic research-scheduling proxy based on decision-boundary proximity, evidence/freshness gaps, uncertainty and the existence of a concrete next question. It is not a probability, security score, Buy Gate, or sizing authority.
 
 ### Scenario-probability calibration
 
-stock owns a prospective Bear/Base/Bull forecast ledger:
+Forecast probabilities/fair values remain frozen prospectively; 52-week outcomes are classified by the original Bear/Base/Bull boundaries; multiclass Brier score is used; forecasts are spaced to reduce pseudo-replication; ≥30 resolved forecasts are required before `CALIBRATED`.
 
-- forecast probabilities and fair values are frozen prospectively;
-- 52-week realized prices are classified using the midpoint between Bear/Base and Base/Bull fair values;
-- multiclass Brier score measures probability quality;
-- repeated same-security forecasts are spaced by at least 28 days;
-- outcome resolution allows at most 14 days from the declared due date;
-- at least 30 resolved forecasts are required before status may become `CALIBRATED`.
+## Capital opportunity frontier
 
-Elephant consumes this ledger as **calibration evidence only**. It may support a future separately versioned challenger but cannot silently rewrite upstream scenario probabilities, Buy Gate authority or portfolio sizing.
+Expected return alone is insufficient for cross-asset dominance. Elephant publishes a diagnostic frontier only where standardized evidence supports comparable expected return and tail-risk quantities.
 
-## Canonical browser-local PortfolioState
+Missing risk/liquidity evidence is reported explicitly; it is never imputed merely to complete a frontier. The production opportunity hurdle remains unchanged until a separately versioned capital-model decision is validated.
 
-Elephant uses one canonical browser-local state contract:
+## Canonical browser-local PortfolioState and stress
+
+Canonical private state remains:
 
 ```text
 elephant.portfolio.v3
-        ↓
-PortfolioState schema v3
         ├─ Command Center
-        ├─ Decision Engine portfolio envelope
-        └─ Personal Capital
+        ├─ Decision Engine
+        ├─ Personal Capital
+        └─ Portfolio Risk / Stress
 ```
 
-Rules:
+All state stays in browser `localStorage`. Detailed holdings remain authoritative for equity/largest-position values. Browser stress may compute concentration, broad-equity shock, largest-name shock, Top-3 shock, liquidity shortfall and post-shock debt ratios.
 
-- `elephant.portfolio.v2` is the authoritative previous-version migration source when present;
-- only browsers without v2 fall back to the older `elephant.portfolio.v1` + `elephant.personal.capital.v3` pair, where detailed holdings/debt semantics win;
-- migration writes and verifies `elephant.portfolio.v3` before deleting all migration-source keys;
-- old keys are no longer live aliases and post-migration writes to them cannot change canonical state;
-- all three browser consumers read/write only through `window.ElephantPortfolioState`;
-- writes are merged into the canonical state instead of replacing unrelated fields;
-- when detailed holdings are present, `equity` and `largest` are derived from those holdings and are authoritative;
-- a simplified calculator may update common fields such as total, cash or drawdown tolerance, but cannot overwrite holdings-derived equity / largest with contradictory values;
-- Personal Capital fields such as debt, collateral, maintenance threshold, liquidity need, human capital and transaction frictions remain preserved when simpler views write;
-- all state stays in browser `localStorage`; it is never written to GitHub or public artifacts;
-- PortfolioState only supplies private inputs to review models. It does not grant security BUY authority and does not place trades.
+Ticker→AI/sector/FX factor labels are not inferred from names. Factor exposures remain unavailable until backed by a verified public mapping contract. Stress analysis cannot create BUY authority, place trades or write private holdings to GitHub.
 
-Migration is covered by both deterministic storage tests and a real Chromium E2E that starts from legacy state, loads the deployed application shell, writes through Command Center and Decision Engine, reloads, and confirms all views rehydrate from one v3 key.
+## Statistical challenger policy
 
-## External-source constraints
+Simple statistical models may run as non-authoritative diagnostics on latest-revised history:
 
-A public-data connector is “complete” only if it is reproducible, first-party/official where required, machine-verifiable, and fail-closed/last-good safe. TLS verification must never be disabled merely to make a source green.
+- expanding-window Ridge;
+- EWMA state estimate;
+- Bayesian shrinkage mean.
 
-Current source policy:
+Dynamic Factor Model, MIDAS and broader Bayesian model averaging remain blocked from production use until a sufficiently mature point-in-time mixed-frequency feature matrix exists. Complexity is not evidence; every challenger must beat the simpler champion under the preregistered point-in-time contract before a versioned human review may promote it.
 
-- DGBAS wage/employment XML may fall back to equivalent official publication/news semantics when the XML transport certificate fails validation.
-- MOEA live structural tables and official fallbacks are preferred over dead legacy endpoints; last-good retention is explicit.
-- non-critical benchmark pages may retain last-good first-party observations when a current parse fails.
-- SEGIS uses the JSON service URL advertised by the official canonical product page, validates the complete machine schema, and writes normalized township/district business counts to `data/segis.json`. It is structural context only and never changes deterministic score authority.
+## Model-promotion governance
 
-Degraded states remain explicit integrity controls, not permission to weaken verification.
+Promotion rules are registered before future outcomes are known. Changing a target, horizon, threshold or eligible metric after seeing outcomes requires an explicit version bump and cannot retroactively rewrite the old experiment.
+
+No challenger, Validation OS output, VOI rank, consultant claim, macro optimism or portfolio stress result can automatically:
+
+- upgrade a stock to BUY;
+- change production model weights;
+- change the production hurdle;
+- size a private portfolio;
+- execute a trade.
+
+## Visualization contract
+
+1. Observed values use straight segments; no invented spline curvature.
+2. Y-axis units are visible.
+3. Reference lines are semantic.
+4. Dual-axis charts warn against direct magnitude/slope comparison.
+5. Index level is not growth.
+6. Score is not probability.
+7. Historical reconstruction is labeled and never presented as point-in-time performance.
+
+## UI information hierarchy
+
+```text
+1. What changed / what action is reviewable?
+2. Why? Macro + security authority + portfolio constraints
+3. What evidence supports or contradicts it?
+4. How reliable is the source/model/sample?
+5. What changed since the previous decision?
+6. Raw data, vintages, provenance and operational health
+```
+
+The system is considered engineering-complete when capture, validation, fail-closed gates and audit paths exist. It is considered empirically validated only after the preregistered future evidence actually matures. Those two states must never be conflated.

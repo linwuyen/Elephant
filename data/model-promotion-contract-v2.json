@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "contract": "pre_registered_elephant_model_promotion_v2",
+  "registered_at": "2026-08-23",
+  "automatic_promotion": false,
+  "immutable_without_version_bump": true,
+  "historical_reconstruction": {
+    "may_screen_challengers": true,
+    "may_promote_production_model": false,
+    "reason": "Latest-revised historical series are not point-in-time vintages."
+  },
+  "point_in_time_gate": {
+    "minimum_distinct_snapshot_months": 36,
+    "lookahead_guardrail_required": true,
+    "sqlite_integrity_required": true,
+    "minimum_horizons_months": [3, 6]
+  },
+  "score_weight_challenger": {
+    "minimum_common_samples_per_horizon": 36,
+    "primary_target": "dimension-appropriate future composite",
+    "minimum_average_primary_correlation_improvement": 0.05,
+    "maximum_allowed_single_horizon_correlation_regression": 0.02,
+    "secondary_cycle_metric_is_diagnostic_only": true,
+    "prospective_direction_or_brier_must_not_materially_worsen": true,
+    "requires_versioned_human_review": true
+  },
+  "risk_budget_challenger": {
+    "minimum_resolved_prospective_outcomes": 36,
+    "minimum_followup_months": 6,
+    "must_not_worsen_market_drawdown_capture": true,
+    "must_not_increase_forced_sale_risk": true,
+    "requires_versioned_human_review": true
+  },
+  "statistical_challengers": {
+    "allowed_diagnostic_models": ["RIDGE_EXPANDING_WINDOW", "BAYESIAN_SHRINKAGE_MEAN", "EWMA_STATE"],
+    "revised_history_authority": false,
+    "point_in_time_promotion_required": true,
+    "no_feature_or_target_redefinition_after_outcomes": true
+  },
+  "governance": {
+    "no_automatic_trading": true,
+    "no_alpha_override": true,
+    "no_consultant_score_influence": true,
+    "model_or_threshold_change_requires_version_bump": true
+  }
+}
