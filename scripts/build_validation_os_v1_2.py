@@ -35,6 +35,7 @@ TARGETS={
     },
 }
 
+ORIGINAL_SOURCE_SCORE=core.source_score
 
 def quality_score(source_id,status):
     slo=load_json('data_quality_slo.json',{})
@@ -60,10 +61,12 @@ def paired_metrics(champion_rows,challenger_rows,dim,horizon):
     cycle_rows=[x for x in rows if x[3] is not None]
     cc=core.pearson([x[0] for x in cycle_rows],[x[3] for x in cycle_rows])
     ec=core.pearson([x[1] for x in cycle_rows],[x[3] for x in cycle_rows])
+    n=len(rows)
     return {
-        'samples':len(rows),
-        'champion':{'pearson_to_primary_target':None if c is None else round(c,3)},
-        'equal_weight_challenger':{'pearson_to_primary_target':None if e is None else round(e,3)},
+        'samples':n,
+        'common_samples':n,
+        'champion':{'samples':n,'pearson_to_primary_target':None if c is None else round(c,3)},
+        'equal_weight_challenger':{'samples':n,'pearson_to_primary_target':None if e is None else round(e,3)},
         'primary_improvement':None if c is None or e is None else round(e-c,3),
         'secondary_cycle_diagnostic':{
             'samples':len(cycle_rows),
@@ -83,7 +86,7 @@ def score_challenger_benchmark():
         for h in (3,6):
             row=paired_metrics((champion.get('history') or {}).get(dim,[]),(challenger.get(dim) or {}).get('history',[]),dim,h)
             horizons[f'{h}m']=row
-            if row['samples']<MIN_COMMON_SAMPLES:enough=False
+            if row['common_samples']<MIN_COMMON_SAMPLES:enough=False
             imp=row['primary_improvement']
             if imp is not None:
                 improvements.append(imp)
@@ -91,8 +94,8 @@ def score_challenger_benchmark():
         avg=None if not improvements else sum(improvements)/len(improvements)
         diagnostic_worth=enough and len(improvements)==2 and avg is not None and avg>=0.05 and no_bad
         if not enough:status='BLOCKED_INSUFFICIENT_COMMON_SAMPLE'
-        elif diagnostic_worth:status='DIAGNOSTIC_CHALLENGER_WORTH_REVIEW'
-        else:status='CHAMPION_RETAINS_DIAGNOSTIC'
+        elif diagnostic_worth:status='CHALLENGER_WORTH_REVIEW'
+        else:status='CHAMPION_RETAINS'
         out[dim]={
             'target':TARGETS[dim],
             'horizons':horizons,
@@ -106,6 +109,7 @@ def score_challenger_benchmark():
     return {
         'version':'1.2',
         'method':'Compare production vs predeclared equal-weight weights on dimension-appropriate future composites; future Cycle is secondary diagnostic rather than a universal target.',
+        'comparison_contract':'paired common-sample comparison on identical score periods and identical dimension-appropriate future outcomes; minimum 36 common observations at both 3M and 6M before review',
         'target_registry':TARGETS,
         'dimensions':out,
         'promotion_boundary':'Revised historical reconstruction may screen challengers but cannot promote them. Promotion requires sufficient prospective point-in-time vintages plus a versioned governance review.',
@@ -131,7 +135,6 @@ def generate(append_journal=True):
     save_json('validation_os.json',obj)
     return obj
 
-ORIGINAL_SOURCE_SCORE=core.source_score
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--no-journal',action='store_true');a=ap.parse_args();generate(append_journal=not a.no_journal)
