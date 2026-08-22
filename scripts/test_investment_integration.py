@@ -9,14 +9,14 @@ def sample(action="VERIFY"):
         "synced_at": "2026-08-15T00:00:00+08:00",
         "upstream": {"repository": "https://github.com/linwuyen/stock"},
         "alpha": {
-            "meta": {"as_of": "2026-08-15"},
+            "meta": {"schema_version": 6, "decision_engine_version": "security-v6.0.0", "as_of": "2026-08-15"},
             "benchmark_asset": {
                 "ticker": "2330",
                 "name": "台積電",
                 "reference_price": 2500,
                 "reference_price_date": "2026-08-15",
                 "confidence_score": 90,
-                "valuation_model": {"expected_return_pct": 20},
+                "valuation_metrics": {"expected_return_pct": 20, "base_upside_pct": 30},
             },
             "rotation_event": {"trigger_price": 3000},
             "stocks": [{
@@ -30,7 +30,7 @@ def sample(action="VERIFY"):
                 "reference_price": 100,
                 "reference_price_date": "2026-08-15",
                 "alpha_spread_pct": 12,
-                "valuation_model": {"expected_return_pct": 32, "margin_of_safety_pct": 25},
+                "valuation_metrics": {"expected_return_pct": 32, "base_upside_pct": 25},
                 "thesis": "test",
                 "next_check": "test",
             }],
@@ -58,10 +58,16 @@ def main():
     now = dt.datetime(2026, 8, 15, 3, 0, tzinfo=dt.timezone(dt.timedelta(hours=8)))
     alpha, summary, decision = sample("VERIFY")
     result = build_investment.build(alpha, summary, decision, now=now)
+    assert result["version"] == 2
+    assert result["architecture"]["alpha_schema"] == 6
     assert result["macro_context"]["label"] == "BROADLY_SUPPORTIVE"
     row = result["selection"]["researched"][0]
     assert row["score"] == 90
     assert row["action"] == "VERIFY", "supportive macro must not promote VERIFY to BUY"
+    assert row["expected_return_pct"] == 32
+    assert row["base_upside_pct"] == 25
+    assert "margin_of_safety_pct" not in row
+    assert result["benchmark"]["base_upside_pct"] == 30
     assert result["selection"]["buy_candidate_count"] == 0
     assert "action" not in result["selection"]["top_screen"][0]
 
