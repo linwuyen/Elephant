@@ -49,8 +49,10 @@ function eq(a,b,msg){if(a!==b)throw new Error(`${msg}: ${a} !== ${b}`)}
     eq(state.cash,1200000,'stale v1 write cannot replace canonical cash');
     eq(await page.evaluate(()=>localStorage.getItem('elephant.portfolio.v1')),null,'canonical load cleans stale v1 write');
 
-    // Decision Engine updates the same state; detailed holdings remain authoritative.
-    await page.waitForSelector('#engineCalc',{timeout:20000});
+    // Use the real Decision Engine tab before interacting with its controls.
+    await page.waitForSelector('.tabs button[data-tab="decision-engine"]',{state:'visible',timeout:20000});
+    await page.click('.tabs button[data-tab="decision-engine"]');
+    await page.waitForSelector('#engineCalc',{state:'visible',timeout:10000});
     await page.fill('#engineTotal','4500000');
     await page.fill('#engineCash','1500000');
     await page.click('#engineCalc');
@@ -64,14 +66,20 @@ function eq(a,b,msg){if(a!==b)throw new Error(`${msg}: ${a} !== ${b}`)}
     // Reload proves all browser views rehydrate from one canonical key.
     await page.reload({waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(()=>window.ElephantPortfolioState?.schemaVersion===3,null,{timeout:15000});
-    await page.waitForSelector('#dccTotal',{timeout:20000});
-    await page.waitForSelector('#engineTotal',{timeout:20000});
-    await page.waitForSelector('#pcTotal',{timeout:20000});
+    await page.waitForSelector('#dccTotal',{state:'visible',timeout:20000});
     eq(await page.inputValue('#dccTotal'),'4500000','Command Center reload total');
-    eq(await page.inputValue('#engineTotal'),'4500000','Decision Engine reload total');
-    eq(await page.inputValue('#pcTotal'),'4500000','Personal Capital reload total');
     eq(await page.inputValue('#dccCash'),'1500000','Command Center reload cash');
+
+    await page.waitForSelector('.tabs button[data-tab="decision-engine"]',{state:'visible',timeout:20000});
+    await page.click('.tabs button[data-tab="decision-engine"]');
+    await page.waitForSelector('#engineTotal',{state:'visible',timeout:10000});
+    eq(await page.inputValue('#engineTotal'),'4500000','Decision Engine reload total');
     eq(await page.inputValue('#engineCash'),'1500000','Decision Engine reload cash');
+
+    await page.waitForSelector('.tabs button[data-tab="investment"]',{state:'visible',timeout:20000});
+    await page.click('.tabs button[data-tab="investment"]');
+    await page.waitForSelector('#pcTotal',{state:'visible',timeout:20000});
+    eq(await page.inputValue('#pcTotal'),'4500000','Personal Capital reload total');
     eq(await page.inputValue('#pcCash'),'1500000','Personal Capital reload cash');
     eq(await page.inputValue('#pcDebt'),'500000','Personal Capital rich field survives simple views');
 
