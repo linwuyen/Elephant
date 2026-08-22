@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 from urllib.parse import urljoin
 
@@ -17,46 +18,24 @@ def visible_text(raw: str) -> str:
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", raw))).strip()
 
 
-def candidate_links(raw: str):
-    links = []
+def json_service_url(raw: str) -> str:
     decoded = html.unescape(raw)
-    for href in re.findall(r'''href\s*=\s*["']([^"']+)["']''', decoded, flags=re.I):
-        value = urljoin(URLS["segis_catalog"], href.replace("&amp;", "&"))
-        low = value.lower()
-        if any(token in low for token in ("json", "filedown", "download", "reqcontroller", "service", "openapi")):
-            links.append(value)
-    return sorted(set(links))
+    m = re.search(r'''data-url=["']([^"']+GetAdminSTDataForOpenCode\?oCode=[^"']+)["'][^>]*>\s*JSON\b''', decoded, flags=re.I | re.S)
+    if not m:
+        raise AssertionError("SEGIS JSON service URL not found in canonical product page")
+    return urljoin(URLS["segis_catalog"], m.group(1).replace("&amp;", "&"))
 
 
-def service_metadata(raw: str):
-    decoded = html.unescape(raw)
-    rows = []
-    patterns = (
-        r'''(?:onclick|data-[\w-]+)\s*=\s*["']([^"']*(?:json|csv|service|download|filedown|reqcontroller)[^"']*)["']''',
-        r'''["']([^"']*(?:QueryInterface|Service|download|filedown|reqcontroller)[^"']*)["']''',
-        r'''\b([A-Za-z_$][\w$]*\([^\n;]{0,300}(?:JSON|CSV|json|csv|download|service)[^\n;]{0,300}\))''',
-    )
-    for pattern in patterns:
-        for value in re.findall(pattern, decoded, flags=re.I):
-            value = re.sub(r"\s+", " ", value).strip()
-            if value and value not in rows:
-                rows.append(value)
-    return rows[:80]
-
-
-def context_snippets(raw: str):
-    decoded = html.unescape(raw)
-    snippets = []
-    for token in ("JSON", "CSV下載", "GeoJSON", "filedown", "reqcontroller", "Service"):
-        for match in re.finditer(re.escape(token), decoded, flags=re.I):
-            start = max(0, match.start() - 350)
-            end = min(len(decoded), match.end() + 500)
-            value = re.sub(r"\s+", " ", decoded[start:end]).strip()
-            if value not in snippets:
-                snippets.append(value)
-            if len(snippets) >= 30:
-                return snippets
-    return snippets
+def inspect_payload(value, depth=0):
+    if depth > 3:
+        return type(value).__name__
+    if isinstance(value, dict):
+        return {str(k): inspect_payload(v, depth + 1) for k, v in list(value.items())[:12]}
+    if isinstance(value, list):
+        return {"type": "list", "length": len(value), "sample": inspect_payload(value[0], depth + 1) if value else None}
+    if isinstance(value, str):
+        return value[:180]
+    return value
 
 
 def main():
@@ -68,21 +47,22 @@ def main():
     assert "開放服務連結" in text and "JSON" in text, "SEGIS product no longer advertises JSON service"
     for field in REQUIRED_FIELDS:
         assert field in text, f"SEGIS field missing: {field}"
-    links = candidate_links(raw)
+
+    service_url = json_service_url(raw)
+    payload_bytes, content_type = request_bytes(service_url, 90, 2)
+    payload_text = decode_text(payload_bytes)
     print("SEGIS PUBLIC METADATA PASS")
     print("target:", EXPECTED_TITLE)
     print("source:", URLS["segis_catalog"])
-    print("machine-link candidates:", len(links))
-    for link in links[:20]:
-        print("candidate:", link)
-    meta = service_metadata(raw)
-    print("service metadata:", len(meta))
-    for row in meta:
-        print("service-meta:", row)
-    snippets = context_snippets(raw)
-    print("service context snippets:", len(snippets))
-    for row in snippets:
-        print("service-context:", row)
+    print("json-service:", service_url)
+    print("json-content-type:", content_type)
+    print("json-bytes:", len(payload_bytes))
+    try:
+        payload = json.loads(payload_text)
+    except json.JSONDecodeError as exc:
+        print("json-prefix:", payload_text[:1000].replace("\n", " "))
+        raise AssertionError(f"SEGIS advertised JSON service is not JSON: {exc}")
+    print("json-shape:", json.dumps(inspect_payload(payload), ensure_ascii=False)[:5000])
 
 
 if __name__ == "__main__":
