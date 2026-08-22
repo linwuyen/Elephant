@@ -20,8 +20,8 @@ URLS={
  # product, not the county-only variant. 114Y12 is the latest public product
  # verified on 2026-08-22; source discovery must fail closed if SEGIS rotates
  # the opaque COL/MCOL identifiers before a reproducible machine endpoint is found.
- 'segis_business_township':'https://segis.moi.gov.tw/STATCloud/QueryInterfaceView?COL=8%252fnKF8Qu3MIbJoiTa%252f3Gng%253d%253d&MCOL=fACyEf%252f7IGprAbIDY0oUgQ%253d%253d',
- 'segis_catalog':'https://segis.moi.gov.tw/STATCloud/Catalog',
+ 'segis_catalog':'https://segis.moi.gov.tw/STATCloud/QueryInterfaceView?COL=8%252fnKF8Qu3MIbJoiTa%252f3Gng%253d%253d&MCOL=fACyEf%252f7IGprAbIDY0oUgQ%253d%253d',
+ 'segis_dataset_catalog':'https://segis.moi.gov.tw/STATCloud/Catalog',
 }
 
 def load_json(name,default):
