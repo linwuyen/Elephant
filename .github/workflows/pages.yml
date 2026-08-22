@@ -58,6 +58,8 @@ jobs:
           node --check decision_validation.js
           node --check validation_os.js
           node --check command_center.js
+          node --check scripts/test_portfolio_state_browser.js
+          node --check scripts/test_portfolio_consumers.js
           python -m py_compile scripts/*.py
       - name: Rebuild derived decision intelligence in validation workspace
         run: |
@@ -83,6 +85,7 @@ jobs:
           python scripts/validate_data.py
           python scripts/test_decision_score_math.py
           node scripts/test_portfolio_state.js
+          node scripts/test_portfolio_consumers.js
           python scripts/validate_decision_scores.py
           python scripts/validate_model_validation.py
           python scripts/validate_structural_layers.py
@@ -92,6 +95,7 @@ jobs:
           python scripts/test_moea_dataset.py
           python scripts/test_ndc_zip_selection.py
           python scripts/test_twse_market_live.py
+          python scripts/test_source_segis.py
           python scripts/test_segis_public.py
           python scripts/validate_intelligence_layer.py
           python scripts/test_source_alpha_v6.py
@@ -113,6 +117,18 @@ jobs:
           python scripts/validate_calibration.py
           python scripts/validate_capital_v3.py
           python scripts/test_capital_v3.py
+      - name: Browser PortfolioState migration E2E
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+          python -m http.server 8765 --bind 127.0.0.1 >/tmp/elephant-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/test_portfolio_state_browser.js
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -145,6 +161,8 @@ jobs:
           python scripts/test_moea_dataset.py
           python scripts/test_ndc_zip_selection.py
           python scripts/test_twse_market_live.py
+          python scripts/test_source_segis.py
+          python scripts/test_segis_public.py
           python scripts/validate_intelligence_layer.py
       - name: Build latest investment, Capital OS and Decision Engine layers for Pages artifact
         run: |
