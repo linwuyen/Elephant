@@ -146,3 +146,15 @@ document.addEventListener('click', (event) => {
     if (box) box.innerHTML = `<div class="notice">顧問研究資料載入失敗：${String(err)}</div>`;
   });
 });
+
+// Cross-repo stock schema v6 presentation bridge. The investment layer is loaded
+// asynchronously by app.js; this renderer waits for it and replaces only the
+// legacy-labeled Base-upside column without changing authority or calculations.
+(()=>{
+  if(document.querySelector('script[data-elephant-investment-v6]'))return;
+  const s=document.createElement('script');
+  s.src='investment_v6_patch.js';
+  s.defer=true;
+  s.dataset.elephantInvestmentV6='1';
+  document.body.appendChild(s);
+})();
