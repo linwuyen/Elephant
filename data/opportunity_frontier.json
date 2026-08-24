@@ -70,21 +70,6 @@
       "capital_eligible": false
     },
     {
-      "id": "2382",
-      "name": "廣達",
-      "type": "researched_security",
-      "source": "ALPHA_ENGINE+CAPITAL_OS",
-      "annualized_expected_return_pct": 12.69,
-      "expected_shortfall_pct": -23.32,
-      "probability_loss_gt_20_pct": 25.0,
-      "liquidity_evidence": null,
-      "risk_complete": true,
-      "upstream_action": "VERIFY",
-      "constitution_status": "BLOCKED",
-      "capital_action": "RESEARCH",
-      "capital_eligible": false
-    },
-    {
       "id": "2301",
       "name": "光寶科",
       "type": "researched_security",
@@ -96,6 +81,21 @@
       "risk_complete": true,
       "upstream_action": "VERIFY",
       "constitution_status": "FAIL",
+      "capital_action": "RESEARCH",
+      "capital_eligible": false
+    },
+    {
+      "id": "2382",
+      "name": "廣達",
+      "type": "researched_security",
+      "source": "ALPHA_ENGINE+CAPITAL_OS",
+      "annualized_expected_return_pct": 12.69,
+      "expected_shortfall_pct": -23.32,
+      "probability_loss_gt_20_pct": 25.0,
+      "liquidity_evidence": null,
+      "risk_complete": true,
+      "upstream_action": "VERIFY",
+      "constitution_status": "BLOCKED",
       "capital_action": "RESEARCH",
       "capital_eligible": false
     },
