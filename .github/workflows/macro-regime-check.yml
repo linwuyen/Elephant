@@ -1,0 +1,37 @@
+name: Macro regime check
+
+on:
+  pull_request:
+    paths:
+      - 'regime.html'
+      - 'macro_regime.js'
+      - 'macro_regime.css'
+      - 'scripts/source_regime_official.py'
+      - 'scripts/test_source_regime_official.py'
+      - 'scripts/update_data.py'
+      - 'scripts/run_official_refresh.py'
+      - '.github/workflows/macro-regime-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python syntax
+        run: python -m py_compile scripts/common.py scripts/source_regime_official.py scripts/test_source_regime_official.py scripts/update_data.py
+      - name: Source parser contract tests
+        run: python scripts/test_source_regime_official.py
+      - name: Dashboard JavaScript syntax
+        run: node --check macro_regime.js
+      - name: Static ownership guard
+        run: |
+          git diff --exit-code origin/${{ github.base_ref }}...HEAD -- index.html summary.js decision.js scripts/build_summary.py scripts/build_decision_scores.py

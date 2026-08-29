@@ -26,6 +26,7 @@ import build_statistical_challengers
 import build_decision_command
 import revision_tracker
 import source_macro
+import source_regime_official
 import source_moea
 import source_moea_live_tables
 import source_ndc
@@ -40,6 +41,7 @@ import source_segis
 
 def coverage(status):
     macro = load_json('macro.json', {})
+    regime = load_json('regime_official.json', {})
     pop = load_json('population.json', {})
     ind = load_json('industry.json', {})
     ndc = load_json('ndc.json', {})
@@ -50,6 +52,9 @@ def coverage(status):
     for iid, s in macro.get('series', {}).items():
         d = s.get('data', [])
         rows.append({'source': 'dgbas', 'dataset': s.get('dataset_id'), 'indicator': iid, 'name': s.get('name'), 'frequency': s.get('frequency', 'annual'), 'points': len(d), 'period': f'{d[0][0]}..{d[-1][0]}' if d else '-'})
+    for iid, s in regime.get('series', {}).items():
+        d = s.get('data', [])
+        rows.append({'source': 'regime_official', 'dataset': s.get('dataset_id'), 'indicator': iid, 'name': s.get('name'), 'frequency': s.get('frequency', 'monthly'), 'points': len(d), 'period': f'{d[0][0]}..{d[-1][0]}' if d else '-'})
     for iid, s in pop.get('national', {}).items():
         d = s.get('data', [])
         rows.append({'source': 'ris', 'dataset': 'ris.history', 'indicator': iid, 'name': s.get('name'), 'frequency': 'annual', 'points': len(d), 'period': f'{d[0][0]}..{d[-1][0]}' if d else '-'})
@@ -97,12 +102,13 @@ def main():
     status = {
         'last_check_at': now,
         'last_successful_sync_at': old_status.get('last_successful_sync_at'),
-        'pipeline_version': 22,
+        'pipeline_version': 23,
         'schedule': '每日 18:17 Asia/Taipei',
         'sources': {},
     }
     bad = []
     refresh_source(status, bad, 'dgbas', source_macro.update, a.offline_dir, True)
+    refresh_source(status, bad, 'regime_official', source_regime_official.update, a.offline_dir, False)
     source_moea.live_sales_index = source_moea_live_tables.live_sales_index
     refresh_source(status, bad, 'moea', source_moea.update, a.offline_dir, True)
     refresh_source(status, bad, 'ris', source_ris.update, a.offline_dir, True)
