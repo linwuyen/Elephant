@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="history.css">
 <link rel="stylesheet" href="decision.css">
 <link rel="stylesheet" href="research.css">
+<link rel="stylesheet" href="macro_regime.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/sql-wasm.js"></script>
 </head>
@@ -27,6 +28,7 @@
   <div class="cards" id="headlineCards"></div>
   <nav class="tabs" aria-label="主要頁籤">
     <button class="active" data-tab="overview">總覽</button>
+    <button data-tab="regime">Macro Regime</button>
     <button data-tab="leading">領先指標</button>
     <button data-tab="history">情報歷史</button>
     <button data-tab="macro">GDP／CPI</button>
@@ -43,6 +45,8 @@
     </div>
     <article class="panel"><div class="panel-head"><div><span class="kicker">COUNTIES</span><h2>最新縣市人口結構</h2></div><span class="tag" id="countyPeriod">—</span></div><div class="table-wrap"><table><thead><tr><th>縣市</th><th>人口</th><th>0–14歲</th><th>65歲以上</th><th>65+占比</th><th>老化指數</th></tr></thead><tbody id="countyTable"></tbody></table></div></article>
   </section>
+
+  <section id="regime" class="tab"><div id="macroRegimeRoot"></div></section>
 
   <section id="leading" class="tab">
     <article class="panel"><div class="panel-head controls-head"><div><span class="kicker">NATIONAL DEVELOPMENT COUNCIL</span><h2>景氣領先／同時指標與 PMI</h2><p class="sub" id="ndcLatest">載入國發會官方資料…</p></div><div class="controls"><label>指標<select id="leadingSelect"></select></label><button class="secondary" id="leadingCsv">下載 CSV</button><a class="secondary" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener">官方資料</a></div></div><div class="chart tall"><canvas id="leadingChart"></canvas></div><div class="table-wrap compact"><table><thead><tr><th>期間</th><th>數值</th><th>單位</th></tr></thead><tbody id="leadingRows"></tbody></table></div></article>
@@ -79,32 +83,14 @@ GROUP BY company
 ORDER BY reports DESC;</textarea><div class="sql-actions"><button class="secondary" id="sqlRun">執行 SQL</button><button class="secondary" id="sqlExample">公司 coverage 範例</button></div><div id="sqlOutput" class="sql-output">SQLite 尚未載入。</div></article>
   </section>
 
-  <section id="health" class="tab">
-    <article class="panel"><div class="panel-head"><div><span class="kicker">PIPELINE</span><h2>資料來源與更新狀態</h2></div><span class="tag" id="lastCheck">—</span></div><div class="source-grid" id="sourceCards"></div></article>
-    <article class="panel"><div class="panel-head"><div><span class="kicker">PROVENANCE</span><h2>官方資料來源</h2></div></div><div class="source-links">
-      <a class="source-link" href="https://data.gov.tw/dataset/130489" target="_blank" rel="noopener"><b>GDP 成長／CPI 官方再發布</b><span>政府資料開放平台 · 原始來源含主計總處</span></a>
-      <a class="source-link" href="https://data.gov.tw/dataset/43372" target="_blank" rel="noopener"><b>名目 GDP／產業 GDP</b><span>國發會開放資料 · 資料來源主計總處</span></a>
-      <a class="source-link" href="https://service.moea.gov.tw/EE520/" target="_blank" rel="noopener"><b>經濟部統計資料</b><span>工業生產、製造業銷售與產業序列</span></a>
-      <a class="source-link" href="https://data.gov.tw/dataset/6845" target="_blank" rel="noopener"><b>外銷訂單</b><span>Growth Persistence 需求領先來源</span></a>
-      <a class="source-link" href="https://data.gov.tw/dataset/6842" target="_blank" rel="noopener"><b>批發／零售／餐飲營業額</b><span>Domestic Demand 內需來源</span></a>
-      <a class="source-link" href="https://data.gov.tw/dataset/13228" target="_blank" rel="noopener"><b>薪資／工時／失業</b><span>勞動部公開之主計總處等月資料</span></a>
-      <a class="source-link" href="https://www.cbc.gov.tw/tw/lp-1046-1.html" target="_blank" rel="noopener"><b>央行 M2</b><span>Financial Conditions 貨幣條件</span></a>
-      <a class="source-link" href="https://www.ris.gov.tw/documents/data/en/3" target="_blank" rel="noopener"><b>戶政人口資料</b><span>內政部戶政司歷史人口資料</span></a>
-      <a class="source-link" href="https://data.gov.tw/dataset/6099" target="_blank" rel="noopener"><b>景氣指標與燈號</b><span>國發會領先／同時／落後指標</span></a>
-      <a class="source-link" href="https://data.gov.tw/dataset/6100" target="_blank" rel="noopener"><b>PMI / NMI</b><span>國發會採購經理人指數</span></a>
-      <a class="source-link" href="https://segis.moi.gov.tw/STATCloud/QueryInterfaceView?COL=8%252fnKF8Qu3MIbJoiTa%252f3Gng%253d%253d&amp;MCOL=fACyEf%252f7IGprAbIDY0oUgQ%253d%253d" target="_blank" rel="noopener"><b>SEGIS 鄉鎮市區工商家數</b><span>內政部社會經濟資料服務平台 · 官方公開 JSON · structural context only</span></a>
-      <a class="source-link" href="https://github.com/linwuyen/Consultant_System" target="_blank" rel="noopener"><b>Consultant_System</b><span>McKinsey、BCG、Deloitte、PwC metadata / SQLite research context</span></a>
-    </div></article>
-    <article class="panel"><div class="panel-head"><div><span class="kicker">COVERAGE</span><h2>目前網頁可查序列</h2></div></div><div class="table-wrap"><table><thead><tr><th>來源</th><th>資料集</th><th>指標 / 序列</th><th>點數</th><th>期間</th></tr></thead><tbody id="coverageRows"></tbody></table></div></article>
-    <article class="notice"><strong>SEGIS</strong><p>行政區工商家數使用官方產品頁直接宣告的 JSON machine service；寫入前驗證公開／免申請狀態、欄位、OutTotal、行政區唯一性、單一期間與非負值。SEGIS 只提供 structural context，不進入 deterministic Score；來源失敗時保留上一版正確資料。</p></article>
-    <article class="panel small"><h2>自動化規則</h2><ul class="rules"><li>每日 18:17（Asia/Taipei）檢查 DGBAS、MOEA、RIS、NDC、SEGIS 與決策輸入官方來源。</li><li>每日 10:17 同步 Consultant_System 的研究 metadata、CSV 與 SQLite snapshot。</li><li>新官方資料先解析、revision diff、值域與 freshness 驗證；失敗時保留上一版。</li><li>每次官方資料更新重算 Cycle Score、Growth Persistence、Domestic Demand、Financial Conditions 與摘要。</li><li>顧問研究與 SEGIS structural context 永遠不直接參與 deterministic Score。</li><li>所有 Score 缺值時重新正規化權重並降低 Confidence，不把缺值當 0。</li><li>資料通過驗證後自動 commit 到 <code>main</code> 並重新發布 Pages。</li><li>關鍵來源更新失敗時，自動建立或更新 GitHub Issue；恢復後自動關閉。</li></ul></article>
-  </section>
+  <section id="health" class="tab"><article class="panel"><div class="panel-head"><div><span class="kicker">PIPELINE</span><h2>資料來源與更新狀態</h2></div><span class="tag" id="lastCheck">—</span></div><div class="source-grid" id="sourceCards"></div></article></section>
 </main>
-<footer class="wrap footer"><span>Elephant · Taiwan Economic Intelligence</span><span id="footerSync"></span></footer>
+<footer class="wrap footer"><span>Elephant · Taiwan Economic Intelligence</span><span id="footerSync">—</span></footer>
 <script src="app.js"></script>
-<script src="leading.js"></script>
-<script src="history.js"></script>
 <script src="summary.js"></script>
+<script src="history.js"></script>
 <script src="decision.js"></script>
 <script src="research.js"></script>
-</body></html>
+<script src="macro_regime.js"></script>
+</body>
+</html>
